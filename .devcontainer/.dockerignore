@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Dependencies (will be installed in container)
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+*.egg-info/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test outputs
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Project specific (adjust as needed)
+*.db
+*.sqlite
+*.sqlite3
+
+
+
+
+
+
