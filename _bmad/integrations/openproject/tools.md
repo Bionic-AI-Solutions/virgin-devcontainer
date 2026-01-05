@@ -10,13 +10,13 @@ This document provides the complete reference for OpenProject MCP tools used in 
 
 ### Document Storage Hierarchy
 
-| Work Package Level | Documents to Store |
-|--------------------|-------------------|
-| **Project** | Product briefs, project overview, high-level specs |
-| **Epic** | Epic specifications, business cases, epic-level architecture |
-| **Feature** | Feature architecture, technical designs, feature specs |
-| **User Story** | Story specifications, detailed acceptance criteria docs |
-| **Task** | Implementation notes, technical details, code documentation |
+| Work Package Level | Documents to Store                                           |
+| ------------------ | ------------------------------------------------------------ |
+| **Project**        | Product briefs, project overview, high-level specs           |
+| **Epic**           | Epic specifications, business cases, epic-level architecture |
+| **Feature**        | Feature architecture, technical designs, feature specs       |
+| **User Story**     | Story specifications, detailed acceptance criteria docs      |
+| **Task**           | Implementation notes, technical details, code documentation  |
 
 ## Configuration
 
@@ -127,16 +127,16 @@ All OpenProject settings are stored in `_bmad/_config/project-config.yaml` under
 
 **Document Storage Guidelines:**
 
-| Document Type | Store At Level | Example |
-|---------------|----------------|---------|
-| Product Brief | Project | Overall product vision document |
-| PRD | Project or Epic | Requirements for the product/epic |
-| Architecture Doc | Feature | Technical architecture for the feature |
-| Technical Spec | Feature/Story | Detailed technical specifications |
-| Acceptance Criteria | Story | Story-specific acceptance criteria doc |
-| Implementation Notes | Task | Task-specific technical notes |
-| Test Strategy | Story/Feature | Testing approach documentation |
-| API Documentation | Feature | API specs for the feature |
+| Document Type        | Store At Level  | Example                                |
+| -------------------- | --------------- | -------------------------------------- |
+| Product Brief        | Project         | Overall product vision document        |
+| PRD                  | Project or Epic | Requirements for the product/epic      |
+| Architecture Doc     | Feature         | Technical architecture for the feature |
+| Technical Spec       | Feature/Story   | Detailed technical specifications      |
+| Acceptance Criteria  | Story           | Story-specific acceptance criteria doc |
+| Implementation Notes | Task            | Task-specific technical notes          |
+| Test Strategy        | Story/Feature   | Testing approach documentation         |
+| API Documentation    | Feature         | API specs for the feature              |
 
 **Note:** To upload attachments, use the OpenProject UI or API directly. The MCP tools support listing and deleting attachments.
 

@@ -7,14 +7,18 @@ This workflow defines how BMAD agents interact with OpenProject for work managem
 **CRITICAL RULE:** OpenProject is the PRIMARY system for BOTH work management AND document storage.
 
 ### Work Management
+
 Before coding ANY functionality:
+
 1. Check OpenProject for current work packages
 2. Update work package status when starting work
 3. Update status when work is complete
 4. NEVER code without an associated work package
 
 ### Document Storage
+
 ALL project artifacts must be stored as OpenProject attachments at the appropriate level:
+
 - **Project-level**: Product briefs, project overview docs
 - **Epic-level**: Epic specifications, business cases
 - **Feature-level**: Feature architecture, technical designs
@@ -203,19 +207,19 @@ All project documents are stored as OpenProject attachments. Choose the correct 
 
 ### Document Types and Storage Location
 
-| Document Type | Storage Level | Rationale |
-|---------------|---------------|-----------|
-| Product Brief | Project | Applies to entire project |
-| PRD | Project or Epic | Requirements scope |
-| Architecture Overview | Project | System-wide architecture |
-| Feature Architecture | Feature | Feature-specific design |
-| Technical Specification | Feature/Story | Implementation details |
-| API Documentation | Feature | API is feature-level |
-| Acceptance Criteria Doc | Story | Story-specific criteria |
-| Test Strategy | Feature | Feature-level testing |
-| Test Cases | Story | Story-specific tests |
-| Implementation Notes | Task | Task-specific details |
-| Code Documentation | Task | Implementation reference |
+| Document Type           | Storage Level   | Rationale                 |
+| ----------------------- | --------------- | ------------------------- |
+| Product Brief           | Project         | Applies to entire project |
+| PRD                     | Project or Epic | Requirements scope        |
+| Architecture Overview   | Project         | System-wide architecture  |
+| Feature Architecture    | Feature         | Feature-specific design   |
+| Technical Specification | Feature/Story   | Implementation details    |
+| API Documentation       | Feature         | API is feature-level      |
+| Acceptance Criteria Doc | Story           | Story-specific criteria   |
+| Test Strategy           | Feature         | Feature-level testing     |
+| Test Cases              | Story           | Story-specific tests      |
+| Implementation Notes    | Task            | Task-specific details     |
+| Code Documentation      | Task            | Implementation reference  |
 
 ### Attaching Documents
 

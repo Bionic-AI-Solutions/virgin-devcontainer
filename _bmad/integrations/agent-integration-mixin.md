@@ -6,22 +6,22 @@ This file defines the standard integration capabilities that ALL BMAD agents sho
 
 ### System Responsibilities
 
-| System | Responsibility |
-|--------|----------------|
-| **OpenProject** | Work management + ALL project documents (attachments) |
-| **Archon** | Search EXTERNAL knowledge only (library docs, patterns) |
+| System          | Responsibility                                          |
+| --------------- | ------------------------------------------------------- |
+| **OpenProject** | Work management + ALL project documents (attachments)   |
+| **Archon**      | Search EXTERNAL knowledge only (library docs, patterns) |
 
 ### Document Storage Hierarchy
 
 **ALL project documents must be stored as OpenProject attachments at the appropriate level:**
 
-| Work Package Level | Documents to Store |
-|--------------------|-------------------|
-| **Project** | Product briefs, project overview, high-level specs |
-| **Epic** | Epic specifications, business cases |
-| **Feature** | Feature architecture, technical designs, API specs |
-| **Story** | Story specifications, acceptance criteria docs |
-| **Task** | Implementation notes, technical details |
+| Work Package Level | Documents to Store                                 |
+| ------------------ | -------------------------------------------------- |
+| **Project**        | Product briefs, project overview, high-level specs |
+| **Epic**           | Epic specifications, business cases                |
+| **Feature**        | Feature architecture, technical designs, API specs |
+| **Story**          | Story specifications, acceptance criteria docs     |
+| **Task**           | Implementation notes, technical details            |
 
 **⚠️ DO NOT store project documents in Archon. Archon is ONLY for searching external knowledge.**
 
@@ -70,7 +70,7 @@ openproject_capabilities:
     - list_work_package_attachments: "List attachments on work package"
     - delete_attachment: "Delete attachment"
     # Note: Upload via OpenProject UI or API directly
-    
+
   document_guidelines:
     project_level: "Product briefs, project overview docs"
     epic_level: "Epic specifications, business cases"
@@ -91,7 +91,7 @@ archon_capabilities:
     - rag_read_full_page: "Read complete external documentation page"
     - rag_get_available_sources: "List external knowledge sources"
     - rag_list_pages_for_source: "Browse external documentation structure"
-    
+
   # IMPORTANT: Do NOT use Archon for project documents!
   # The following operations should NOT be used for project artifacts:
   # - manage_document (don't store project docs here)
@@ -258,18 +258,18 @@ Add these menu items to all agents:
 
 All settings come from `_bmad/_config/project-config.yaml`:
 
-| Setting Path                       | Description                         |
-| ---------------------------------- | ----------------------------------- |
-| `openproject.project_id`           | OpenProject project ID              |
-| `openproject.types.epic`           | Epic type ID                        |
-| `openproject.types.feature`        | Feature type ID                     |
-| `openproject.types.user_story`     | User Story type ID                  |
-| `openproject.types.task`           | Task type ID                        |
-| `openproject.statuses.new`         | New status ID                       |
-| `openproject.statuses.in_progress` | In Progress status ID               |
-| `openproject.statuses.in_testing`  | In Testing status ID                |
-| `openproject.statuses.closed`      | Closed status ID                    |
-| `archon.rag.default_match_count`   | Default search result count         |
+| Setting Path                       | Description                 |
+| ---------------------------------- | --------------------------- |
+| `openproject.project_id`           | OpenProject project ID      |
+| `openproject.types.epic`           | Epic type ID                |
+| `openproject.types.feature`        | Feature type ID             |
+| `openproject.types.user_story`     | User Story type ID          |
+| `openproject.types.task`           | Task type ID                |
+| `openproject.statuses.new`         | New status ID               |
+| `openproject.statuses.in_progress` | In Progress status ID       |
+| `openproject.statuses.in_testing`  | In Testing status ID        |
+| `openproject.statuses.closed`      | Closed status ID            |
+| `archon.rag.default_match_count`   | Default search result count |
 
 ## Usage Example
 
@@ -297,16 +297,16 @@ When executing a workflow:
 
 ## Document Storage Quick Reference
 
-| Document Type | OpenProject Level | Example |
-|---------------|-------------------|---------|
-| Product Brief | Project | High-level product vision |
-| PRD | Project/Epic | Requirements document |
-| System Architecture | Project | Overall system design |
-| Feature Architecture | Feature | Feature-specific design |
-| Technical Spec | Feature/Story | Implementation details |
-| API Documentation | Feature | API design and specs |
-| Acceptance Criteria | Story | Detailed story criteria |
-| Test Strategy | Feature | Testing approach |
-| Test Cases | Story | Specific test scenarios |
-| Implementation Notes | Task | Code documentation |
-| ADR | Feature | Architecture Decision Record |
+| Document Type        | OpenProject Level | Example                      |
+| -------------------- | ----------------- | ---------------------------- |
+| Product Brief        | Project           | High-level product vision    |
+| PRD                  | Project/Epic      | Requirements document        |
+| System Architecture  | Project           | Overall system design        |
+| Feature Architecture | Feature           | Feature-specific design      |
+| Technical Spec       | Feature/Story     | Implementation details       |
+| API Documentation    | Feature           | API design and specs         |
+| Acceptance Criteria  | Story             | Detailed story criteria      |
+| Test Strategy        | Feature           | Testing approach             |
+| Test Cases           | Story             | Specific test scenarios      |
+| Implementation Notes | Task              | Code documentation           |
+| ADR                  | Feature           | Architecture Decision Record |
