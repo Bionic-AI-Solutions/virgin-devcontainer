@@ -5,6 +5,7 @@ This document provides the reference for Archon MCP tools used for **searching e
 ## CRITICAL: Archon Scope
 
 ✅ **USE Archon For (Search Only):**
+
 - External library documentation
 - Framework references and guides
 - Code examples from public repositories
@@ -12,6 +13,7 @@ This document provides the reference for Archon MCP tools used for **searching e
 - Research from external sources
 
 ❌ **DO NOT USE Archon For:**
+
 - Storing project documents (use OpenProject attachments)
 - PRDs, architecture docs (use OpenProject attachments)
 - Any project-specific artifacts (use OpenProject attachments)
@@ -27,7 +29,7 @@ archon:
   enabled: true
   rag:
     default_match_count: 5
-    preferred_sources: []  # Source IDs for frequently used docs
+    preferred_sources: [] # Source IDs for frequently used docs
 ```
 
 **Setup:** Get knowledge sources with `mcp_archon_rag_get_available_sources()`

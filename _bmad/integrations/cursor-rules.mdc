@@ -124,7 +124,46 @@ Agents should read configuration values from this file when executing workflows.
 - Update test status in OpenProject
 - **Documents:** Attach test strategy to Feature-level, test cases to Story-level
 
+### Test Team
+
+- Validate tasks when marked "In testing" (79)
+- Validate stories when all tasks complete
+- Create bugs for validation failures
+- Validate bug fixes (iterate until closed)
+- Close stories only after all tasks and bugs closed
+- Close epics only after all stories closed
+- **Documents:** Attach test results to Story-level, bug reports to Story-level
+
+## Story Verification Standard
+
+**CRITICAL: Every story MUST have a final verification task**
+
+- **Task Name:** "Task N: Verify Story Implementation (AC: All)"
+- **Position:** Always the LAST task in the story
+- **Purpose:** Verify all acceptance criteria are met and implementation works as expected
+
+**Standard Verification Subtasks:**
+
+1. Verify all acceptance criteria are met
+2. Verify implementation works as expected
+3. Verify code follows architecture patterns and constraints
+4. Verify integration with existing systems (if applicable)
+5. Verify error handling works correctly
+6. Verify tests pass (if applicable)
+7. Verify documentation is updated
+
+**Story-Specific Verification:**
+
+- Infrastructure stories: Verify services start, health checks pass, network connectivity
+- API stories: Verify endpoints work, authentication/authorization works
+- Database stories: Verify schema migrations work, queries perform correctly
+- Integration stories: Verify external services connect, data flows correctly
+
+**Reference:** `_bmad/workflows/STORY_VERIFICATION_STANDARD.md`
+
 ## Standard Workflow Pattern
+
+### Dev Workflow Pattern
 
 ```
 1. ACTIVATE    → Load project-config.yaml
@@ -132,8 +171,61 @@ Agents should read configuration values from this file when executing workflows.
 3. START       → mcp_openproject_update_work_package(status_id=config.openproject.statuses.in_progress)
 4. RESEARCH    → mcp_archon_rag_search_knowledge_base(...) [EXTERNAL knowledge only]
 5. IMPLEMENT   → Execute work
-6. DOCUMENT    → Attach docs to appropriate OpenProject work package [NOT Archon]
-7. COMPLETE    → mcp_openproject_update_work_package(status_id=config.openproject.statuses.closed)
+6. MARK READY  → mcp_openproject_update_work_package(status_id=config.openproject.statuses.in_testing)
+7. TEST VALIDATE → Test team validates (task/story) - see Test Team Workflow Pattern
+8. BUG CYCLE   → If bugs found: create → fix → validate (iterate until all bugs closed)
+9. VERIFY      → Complete verification task (verify all acceptance criteria)
+10. DOCUMENT   → Attach docs to appropriate OpenProject work package [NOT Archon]
+11. COMPLETE   → mcp_openproject_update_work_package(status_id=config.openproject.statuses.closed)
+```
+
+### Test Team Workflow Pattern
+
+```
+1. VALIDATE TASK → When task is "In testing" (79)
+   - Review implementation
+   - Run test suite
+   - Verify acceptance criteria
+   - Update status: "Closed" (82) if passes, "Test failed" (81) if fails → Create bug
+
+2. VALIDATE STORY → When story is "In testing" (79) and all tasks closed
+   - Review all tasks
+   - Run story test suite
+   - Verify all acceptance criteria
+   - Update status: "Closed" (82) if passes, "Test failed" (81) if fails → Create bugs
+
+3. CREATE BUG → When validation fails
+   - Create bug work package
+   - Link to story (parent relationship)
+   - Add detailed description
+   - Assign to dev
+   - Set status "New" (71)
+
+4. VALIDATE BUG FIX → When bug is "In testing" (79)
+   - Review fix
+   - Re-run tests
+   - Update status: "Closed" (82) if validated, "Test failed" (81) if incomplete → Iterate
+
+5. CLOSE STORY → When all tasks and bugs closed
+   - Verify prerequisites
+   - Close story (status 82)
+
+6. CLOSE EPIC → When all stories closed
+   - Verify all prerequisites
+   - Run epic-level integration tests
+   - Close epic (status 82)
+```
+
+### PM Workflow Pattern (Story Grooming)
+
+```
+1. REVIEW STORY → Get story from OpenProject, review acceptance criteria
+2. BREAK DOWN → Identify tasks needed (30 min - 4 hours each)
+3. CREATE FILE → Create story file in _bmad-output/implementation-artifacts/
+4. CREATE TASKS → Create ALL tasks in OpenProject using bulk_create
+5. LINK TASKS → Set parent relationships for all tasks
+6. VERIFY → Verify all tasks created and linked
+7. MARK IN PROGRESS → Update story status to "In progress" (77) ONLY after tasks created
 ```
 
 ## Quick Start Commands

@@ -336,3 +336,13 @@ If automated setup fails, manually edit `_bmad/_config/project-config.yaml`:
 3. Create Archon project and get UUID
 4. Update config file
 5. Run `python scripts/bmad-setup.py generate-claude-md` to regenerate CLAUDE.md
+
+
+
+
+
+
+
+
+
+
