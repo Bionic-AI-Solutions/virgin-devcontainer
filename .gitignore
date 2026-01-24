@@ -39,3 +39,7 @@ temp/
 
 # BMAD generated output
 _bmad-output/
+
+# BMAD project-specific configuration (keep template, ignore actual config)
+_bmad/_config/project-config.yaml
+CLAUDE.md
