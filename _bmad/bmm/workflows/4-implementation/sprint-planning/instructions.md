@@ -3,6 +3,31 @@
 <critical>The workflow execution engine is governed by: {project-root}/_bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {project-root}/_bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml</critical>
 
+---
+
+## RACI MATRIX
+
+| Activity | PM | SM | Dev | TEA | Architect |
+|----------|----|----|-----|-----|-----------|
+| Sprint Planning | C | R/A | C | C | C |
+| Sprint Status Generation | I | R | I | I | I |
+| Epic Status Review | A | R | I | C | I |
+| Story Prioritization | A | R | C | C | C |
+| Capacity Planning | C | R/A | R | R | C |
+| Sprint Goal Setting | A | R | C | C | C |
+| Sprint Status Updates | I | R | R | R | I |
+
+**Legend:** R = Responsible, A = Accountable, C = Consulted, I = Informed
+
+### Key RACI Notes
+- **SM** is Responsible and Accountable for sprint planning execution
+- **SM** tracks sprint status and updates sprint-status.yaml
+- **PM** is Accountable for sprint goals and story prioritization
+- **Dev** and **TEA** are Consulted for capacity and Responsible for status updates
+- **Architect** is Consulted for technical complexity estimation
+
+---
+
 ## 📚 Document Discovery - Full Epic Loading
 
 **Strategy**: Sprint planning needs ALL epics and stories to build complete status tracking.

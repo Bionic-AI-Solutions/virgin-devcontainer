@@ -12,7 +12,7 @@ This rule file provides standard integration behaviors for all BMAD agents.
 
 ### Rule 1: OpenProject for Work Management AND Document Storage
 
-- **ALL work items** (epics, features, stories, tasks) are managed in OpenProject
+- **ALL work items** (epics, features, stories, tasks, bugs) are managed in OpenProject using OpenProject MCP tools
 - **ALL project documents** are stored as OpenProject attachments
 - ALWAYS check OpenProject for current work before coding
 - ALWAYS update work package status when starting/completing work
@@ -47,6 +47,8 @@ Agents should read configuration values from this file when executing workflows.
 **Rule: OpenProject-First**
 
 - ALL work items (epics, stories, tasks) are managed in OpenProject
+- **CRITICAL: Always check for existing work packages before creating** - update existing instead of creating duplicates
+- **CRITICAL: Work packages must be incremental** - can be verified with previous work, NOT dependent on future work
 - ALL project documents are stored as OpenProject attachments
 - ALWAYS check OpenProject for current work before coding
 - ALWAYS update work package status when starting/completing work
@@ -94,13 +96,29 @@ Agents should read configuration values from this file when executing workflows.
 
 ### PM Agent
 
-- Create work packages using configured type IDs
-- **Documents:** Attach product briefs to Project-level, PRDs to Epic-level
+- **Grooming (Responsible):** Create and groom Epics, Features, User Stories using OpenProject MCP tools
+- **Epic Grooming:** When Epic is "In specification", ensure all required artifacts are attached:
+  - Epic Design Document
+  - Story Breakdown Document
+  - Epic Test Plan (if applicable)
+- **Feature Grooming:** When Feature is "In specification", ensure all required artifacts are attached:
+  - Feature Architecture Document
+  - API Documentation (if Feature includes APIs)
+  - UI Mocks/Designs (if Feature includes UI)
+  - Feature Scope Document
+- **Story Grooming:** When Story is "In specification", ensure all required artifacts are attached:
+  - Acceptance Criteria Document (or in description)
+  - UI Mocks/Designs (if Story includes UI)
+  - Technical Specifications (if Story requires technical details)
+- Update Epic/Feature status → "In progress" when first story starts (automatic via helper functions)
+- **Documents:** Attach product briefs to Project-level, PRDs to Epic-level, Feature architecture to Feature-level
+- **Accountable for:** Grooming quality and artifact completeness
 
 ### Dev Agent
 
-- Query OpenProject for assigned work
-- Update status using configured status IDs
+- Query OpenProject for assigned work using `mcp_openproject_list_work_packages()`
+- Update task/bug status using OpenProject MCP tools: New → In progress → Developed → In testing
+- **CRITICAL:** Use `update_task_status_and_parent()` function when updating task status to automatically update parent Story status
 - Search Archon for EXTERNAL patterns before implementation
 - **Documents:** Attach implementation notes to Task-level
 
@@ -110,29 +128,44 @@ Agents should read configuration values from this file when executing workflows.
 - Search Archon for EXTERNAL architecture patterns
 - **Documents:** Attach architecture docs to Feature-level, ADRs to Feature-level
 
-### SM Agent
+### SM Agent (Scrum Master)
 
+- **Protocol Enforcement (Accountable):** Verify required artifacts before allowing work packages to transition from "In specification" to "Specified"
+- **Epic Specification Protocol:** Verify Epic Design Document, Story Breakdown Document, Epic Test Plan (if applicable) are attached before allowing Epic → "Specified"
+- **Feature Specification Protocol:** Verify Feature Architecture Document, API Documentation (if APIs), UI Mocks (if UI), Feature Scope Document are attached before allowing Feature → "Specified"
+- **Story Specification Protocol:** Verify Acceptance Criteria, UI Mocks (if UI), Technical Specifications (if required) are attached before allowing Story → "Specified"
+- Use `mcp_openproject_list_work_package_attachments()` and helper functions (`verify_feature_specification_artifacts()`, `verify_story_specification_artifacts()`) to check artifacts
+- Block status transitions if artifacts are missing
 - Use OpenProject for sprint planning
 - Report status from OpenProject
 - Track blockers in OpenProject
 - **Documents:** Attach sprint reports to Project-level
+- **Accountable for:** Protocol enforcement, artifact verification, blocking incomplete work packages
 
-### TEA Agent
+### TEA Agent (Test Team)
 
-- Create test work packages
+- Create test work packages, Bugs (when validation fails) using OpenProject MCP tools
 - Search Archon for EXTERNAL testing patterns
-- Update test status in OpenProject
-- **Documents:** Attach test strategy to Feature-level, test cases to Story-level
+- Update task status: In testing → Tested → Closed using OpenProject MCP tools
+- Update bug status: In testing → Tested → Closed using OpenProject MCP tools
+- Run Feature-level integration tests and update Feature status: In testing → Tested → Closed
+- **CRITICAL:** 
+  - Use `update_task_status_and_parent()` when closing tasks
+  - Use `update_bug_status_and_check_story()` when closing bugs
+- **Documents:** Attach test strategy to Feature-level, test cases to Story-level, Feature integration test plans to Feature-level
 
 ### Test Team
 
-- Validate tasks when marked "In testing" (79)
+- Validate tasks when marked "In testing" using OpenProject MCP tools
 - Validate stories when all tasks complete
-- Create bugs for validation failures
+- Create bugs for validation failures using `mcp_openproject_create_work_package(type_id={config.openproject.types.bug})`
 - Validate bug fixes (iterate until closed)
-- Close stories only after all tasks and bugs closed
-- Close epics only after all stories closed
-- **Documents:** Attach test results to Story-level, bug reports to Story-level
+- Run Feature-level integration tests when Feature is "In testing" (automatic when all stories closed)
+- Close tasks/bugs/stories/features only after validation passes
+- Close epics only after all stories/features closed
+- **CRITICAL:** Use helper functions for status updates to maintain parent-child relationships
+- **Documents:** Attach test results to Story-level, bug reports to Story-level, Feature integration test plans to Feature-level
+- **CRITICAL: Integration tests MUST use live systems** - check dependencies before running, stop if unavailable, create infrastructure work
 
 ## Story Verification Standard
 
@@ -167,65 +200,84 @@ Agents should read configuration values from this file when executing workflows.
 
 ```
 1. ACTIVATE    → Load project-config.yaml
-2. CHECK WORK  → mcp_openproject_list_work_packages(project_id=config.openproject.project_id)
-3. START       → mcp_openproject_update_work_package(status_id=config.openproject.statuses.in_progress)
+2. CHECK WORK  → mcp_openproject_list_work_packages(project_id=config.openproject.project_id, status="open")
+3. START       → mcp_openproject_update_work_package(work_package_id=..., status_id=config.openproject.statuses.in_progress)
 4. RESEARCH    → mcp_archon_rag_search_knowledge_base(...) [EXTERNAL knowledge only]
 5. IMPLEMENT   → Execute work
-6. MARK READY  → mcp_openproject_update_work_package(status_id=config.openproject.statuses.in_testing)
-7. TEST VALIDATE → Test team validates (task/story) - see Test Team Workflow Pattern
-8. BUG CYCLE   → If bugs found: create → fix → validate (iterate until all bugs closed)
-9. VERIFY      → Complete verification task (verify all acceptance criteria)
-10. DOCUMENT   → Attach docs to appropriate OpenProject work package [NOT Archon]
-11. COMPLETE   → mcp_openproject_update_work_package(status_id=config.openproject.statuses.closed)
+6. MARK DEVELOPED → mcp_openproject_update_work_package(work_package_id=..., status_id=config.openproject.statuses.developed)
+7. MARK READY  → mcp_openproject_update_work_package(work_package_id=..., status_id=config.openproject.statuses.in_testing)
+   **For Tasks:** Use `update_task_status_and_parent()` to automatically update parent Story
+8. TEST VALIDATE → Test team validates (task/story) - see Test Team Workflow Pattern
+9. BUG CYCLE   → If bugs found: create using `mcp_openproject_create_work_package(type_id=config.openproject.types.bug)` → fix → validate (iterate until all bugs closed)
+10. VERIFY      → Complete verification task (verify all acceptance criteria)
+11. DOCUMENT   → Attach docs to appropriate OpenProject work package [NOT Archon]
+12. MARK TESTED → mcp_openproject_update_work_package(work_package_id=..., status_id=config.openproject.statuses.tested)
+13. COMPLETE   → mcp_openproject_update_work_package(work_package_id=..., status_id=config.openproject.statuses.closed)
+   **For Tasks:** Use `update_task_status_and_parent()` to automatically update parent Story
 ```
 
 ### Test Team Workflow Pattern
 
 ```
-1. VALIDATE TASK → When task is "In testing" (79)
+1. VALIDATE TASK → When task is "In testing"
    - Review implementation
    - Run test suite
    - Verify acceptance criteria
-   - Update status: "Closed" (82) if passes, "Test failed" (81) if fails → Create bug
+   - Update status using OpenProject MCP: "Tested" → "Closed" if passes, "Test failed" if fails → Create bug
+   - **CRITICAL:** Use `update_task_status_and_parent()` when closing to update parent Story
 
-2. VALIDATE STORY → When story is "In testing" (79) and all tasks closed
+2. VALIDATE STORY → When story is "In testing" and all tasks closed
    - Review all tasks
    - Run story test suite
    - Verify all acceptance criteria
-   - Update status: "Closed" (82) if passes, "Test failed" (81) if fails → Create bugs
+   - Update status using OpenProject MCP: "Closed" if passes, "Test failed" if fails → Create bugs
 
 3. CREATE BUG → When validation fails
-   - Create bug work package
-   - Link to story (parent relationship)
-   - Add detailed description
-   - Assign to dev
-   - Set status "New" (71)
+   - Create bug using `mcp_openproject_create_work_package(type_id=config.openproject.types.bug)`
+   - Link to story using `mcp_openproject_set_work_package_parent()`
+   - Add detailed description (expected vs actual, steps to reproduce, AC violated)
+   - Assign to dev using `mcp_openproject_assign_work_package()`
+   - Set status "New" using `config.openproject.statuses.new`
 
-4. VALIDATE BUG FIX → When bug is "In testing" (79)
+4. VALIDATE BUG FIX → When bug is "In testing"
    - Review fix
    - Re-run tests
-   - Update status: "Closed" (82) if validated, "Test failed" (81) if incomplete → Iterate
+   - Update status using OpenProject MCP: "Tested" → "Closed" if validated, "Test failed" if incomplete → Iterate
+   - **CRITICAL:** Use `update_bug_status_and_check_story()` when closing to check parent Story
 
-5. CLOSE STORY → When all tasks and bugs closed
+5. FEATURE INTEGRATION TESTING → When Feature is "In testing" (automatic when all stories closed)
+   - Create Feature integration test plan document
+   - Attach test plan to Feature work package
+   - Run Feature-level integration tests
+   - Update Feature status: "Tested" if passes, "Test failed" if fails → Create issues → Fix → Repeat
+   - Close Feature only after integration tests pass: "Tested" → "Closed"
+
+6. CLOSE STORY → When all tasks and bugs closed
    - Verify prerequisites
-   - Close story (status 82)
+   - Close story using `mcp_openproject_update_work_package(status_id=config.openproject.statuses.closed)`
+   - This automatically triggers parent Feature/Epic status check
 
-6. CLOSE EPIC → When all stories closed
+7. CLOSE FEATURE → When all stories closed and Feature integration tests pass
+   - Verify all prerequisites
+   - Close Feature using `mcp_openproject_update_work_package(status_id=config.openproject.statuses.closed)`
+   - This automatically triggers parent Epic status check
+
+8. CLOSE EPIC → When all stories/features closed
    - Verify all prerequisites
    - Run epic-level integration tests
-   - Close epic (status 82)
+   - Close epic using `mcp_openproject_update_work_package(status_id=config.openproject.statuses.closed)
 ```
 
 ### PM Workflow Pattern (Story Grooming)
 
 ```
-1. REVIEW STORY → Get story from OpenProject, review acceptance criteria
+1. REVIEW STORY → Get story from OpenProject using `mcp_openproject_get_work_package()`, review acceptance criteria
 2. BREAK DOWN → Identify tasks needed (30 min - 4 hours each)
 3. CREATE FILE → Create story file in _bmad-output/implementation-artifacts/
-4. CREATE TASKS → Create ALL tasks in OpenProject using bulk_create
-5. LINK TASKS → Set parent relationships for all tasks
-6. VERIFY → Verify all tasks created and linked
-7. MARK IN PROGRESS → Update story status to "In progress" (77) ONLY after tasks created
+4. CREATE TASKS → Create ALL tasks in OpenProject using `mcp_openproject_bulk_create_work_packages()` or individual `mcp_openproject_create_work_package()` calls
+5. LINK TASKS → Set parent relationships using `mcp_openproject_set_work_package_parent()` for all tasks
+6. VERIFY → Verify all tasks created and linked using `mcp_openproject_get_work_package_children()`
+7. MARK IN PROGRESS → Update story status using `mcp_openproject_update_work_package(status_id=config.openproject.statuses.in_progress)` ONLY after tasks created
 ```
 
 ## Quick Start Commands

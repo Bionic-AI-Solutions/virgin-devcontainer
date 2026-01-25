@@ -129,5 +129,24 @@
     <invoke-task>Validate against {{validation}}</invoke-task>
   </step>
 
+  <step n="11" goal="Attach to OpenProject (if applicable)">
+    <action>Ask user: "Would you like to attach this wireframe to an OpenProject work package (Feature/Story)?"</action>
+    <check if="user confirms YES">
+      <action>Ask for work package ID (Feature or Story ID)</action>
+      <action>Convert wireframe to PNG for attachment (or attach .excalidraw file)</action>
+      <action>Execute: mcp_openproject_add_work_package_attachment(
+        work_package_id={work_package_id},
+        file_data={base64_encoded_file},
+        filename="wireframe-{screen_name}.png",
+        content_type="image/png",
+        description="UI Wireframe: {screen_name}"
+      )</action>
+      <action>Confirm attachment successful</action>
+    </check>
+    <check if="user declines">
+      <action>Inform user: "Wireframe saved locally. Remember to attach to OpenProject if needed for Feature/Story specification."</action>
+    </check>
+  </step>
+
 </workflow>
 ```

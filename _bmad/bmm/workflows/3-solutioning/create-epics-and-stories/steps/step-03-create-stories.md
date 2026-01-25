@@ -134,9 +134,16 @@ _Epic 2: Content Creation_
 - Story: "Login UI (depends on Story 1.3 API endpoint)" (future dependency!)
 - Story: "Edit post (requires Story 1.4 to be implemented first)" (wrong order!)
 
-### 3. Process Epics Sequentially
+### 3. Process Epics and Features Sequentially
 
-For each epic in the approved epics_list:
+**Check if Features were created:**
+
+Load {outputFile} and check if Features exist under epics:
+
+- **If Features exist**: Create stories under Features (Epic N → Feature F → Story M)
+- **If no Features**: Create stories directly under epics (Epic N → Story M)
+
+For each epic (and Feature if applicable) in the approved structure:
 
 #### A. Epic Overview
 
@@ -147,9 +154,20 @@ Display:
 - FRs covered by this epic
 - Any NFRs or additional requirements relevant
 
+#### A2. Feature Overview (if Features exist)
+
+For each Feature in the epic:
+
+Display:
+
+- Feature number and name (e.g., Feature 1.1)
+- Feature functional capability description
+- Feature scope (included/excluded)
+- Integration test scope
+
 #### B. Story Breakdown
 
-Work with user to break down the epic into stories:
+Work with user to break down the epic (or Feature) into stories:
 
 - Identify distinct user capabilities
 - Ensure logical flow within the epic
@@ -157,10 +175,19 @@ Work with user to break down the epic into stories:
 
 #### C. Generate Each Story
 
+**CRITICAL:** Every Story MUST have a test task (Task X.Y.T) created during story grooming. The Story cannot be closed until the test task is completed and closed successfully. The `update_story_status_based_on_tasks()` helper function enforces this requirement and blocks story closure if test task is missing or not closed.
+
 For each story in the epic:
 
 1. **Story Title**: Clear, action-oriented
 2. **User Story**: Complete the As a/I want/So that format
+3. **MANDATORY: Test Task**: Every Story MUST include a test task (Task X.Y.T) for validating the Story implementation
+
+**Test Task Format:**
+- **Task Number**: Task X.Y.T (where T indicates Test task)
+- **Task Title**: "Task X.Y.T: Story X.Y Testing and Validation"
+- **Description**: Include all test activities (create test plan, validate AC, run tests, verify implementation, etc.)
+- **Priority**: High (required for story closure)
 3. **Acceptance Criteria**: Write specific, testable criteria
 
 **AC Writing Guidelines:**
@@ -184,23 +211,38 @@ After writing each story:
 When story is approved:
 
 - Append it to {outputFile} following template structure
-- Use correct numbering (Epic N, Story M)
+- Use correct numbering:
+  - **If Features exist**: Epic N → Feature F → Story M (e.g., Story 1.1.1, Story 1.1.2)
+  - **If no Features**: Epic N → Story M (e.g., Story 1.1, Story 1.2)
 - Maintain proper markdown formatting
+- Place stories under their Feature (if Features exist) or directly under Epic
 
-### 4. Epic Completion
+### 4. Feature Completion (if Features exist)
 
-After all stories for an epic are complete:
+After all stories for a Feature are complete:
+
+- Display Feature summary
+- Show count of stories created in Feature
+- Verify Feature scope is covered
+- Note Feature integration test requirements
+- Get user confirmation to proceed to next Feature
+
+### 5. Epic Completion
+
+After all Features (or stories) for an epic are complete:
 
 - Display epic summary
-- Show count of stories created
+- Show count of Features (if applicable) and stories created
 - Verify all FRs for the epic are covered
 - Get user confirmation to proceed to next epic
 
-### 5. Repeat for All Epics
+### 6. Repeat for All Epics and Features
 
-Continue the process for each epic in the approved list, processing them in order (Epic 1, Epic 2, etc.).
+Continue the process for each epic (and Feature if applicable) in the approved list, processing them in order:
+- Epic 1 → Feature 1.1 → Stories → Feature 1.2 → Stories → ...
+- Epic 2 → Feature 2.1 → Stories → ...
 
-### 6. Final Document Completion
+### 7. Final Document Completion
 
 After all epics and stories are generated:
 
@@ -219,7 +261,12 @@ The final {outputFile} must follow this structure exactly:
 4. **Epic List** with approved epic structure
 5. **Epic sections** for each epic (N = 1, 2, 3...)
    - Epic title and goal
-   - All stories for that epic (M = 1, 2, 3...)
+   - **Feature sections** (if Features exist) for each Feature (F = 1, 2, 3...)
+     - Feature name and description
+     - All stories for that Feature (M = 1, 2, 3...)
+       - Story title and user story
+       - Acceptance Criteria using Given/When/Then format
+   - **OR** Stories directly under Epic (if no Features) (M = 1, 2, 3...)
      - Story title and user story
      - Acceptance Criteria using Given/When/Then format
 

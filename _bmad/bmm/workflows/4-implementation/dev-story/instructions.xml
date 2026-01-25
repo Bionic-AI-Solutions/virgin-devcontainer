@@ -12,6 +12,28 @@
   <critical>Do NOT schedule a "next session" or request review pauses unless a HALT condition applies. Only Step 6 decides completion.</critical>
   <critical>User skill level ({user_skill_level}) affects conversation style ONLY, not code updates.</critical>
 
+  <!-- RACI MATRIX
+    | Activity | PM | SM | Dev | TEA | Architect |
+    |----------|----|----|-----|-----|-----------|
+    | Story Implementation | I | I | R/A | I | C |
+    | Task Execution | I | I | R/A | I | I |
+    | Unit Test Creation | I | I | R/A | C | I |
+    | Code Quality | I | I | R/A | C | C |
+    | Status Updates | I | I | R | I | I |
+    | Code Review Request | I | I | R | C | C |
+    | Integration Testing | I | I | C | R/A | C |
+
+    Legend: R = Responsible, A = Accountable, C = Consulted, I = Informed
+
+    Key RACI Notes:
+    - Dev is Responsible and Accountable for story implementation
+    - Dev uses update_task_status_and_parent() for status updates
+    - Dev must follow red-green-refactor cycle
+    - TEA is Consulted for testing patterns, Accountable for integration testing
+    - Architect is Consulted for technical decisions
+    - All code changes must satisfy acceptance criteria before completion
+  -->
+
   <step n="1" goal="Find next ready story and load it" tag="sprint-status">
     <check if="{{story_path}} is provided">
       <action>Use {{story_path}} directly</action>

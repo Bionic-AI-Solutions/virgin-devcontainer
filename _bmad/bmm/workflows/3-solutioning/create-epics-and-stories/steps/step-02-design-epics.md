@@ -7,7 +7,7 @@ workflow_path: '{project-root}/_bmad/bmm/workflows/3-solutioning/create-epics-an
 
 # File References
 thisStepFile: '{workflow_path}/steps/step-02-design-epics.md'
-nextStepFile: '{workflow_path}/steps/step-03-create-stories.md'
+nextStepFile: '{workflow_path}/steps/step-02b-create-features.md'
 workflowFile: '{workflow_path}/workflow.md'
 outputFile: '{planning_artifacts}/epics.md'
 
@@ -73,6 +73,16 @@ Load {outputFile} and review:
 **EPIC DESIGN PRINCIPLES:**
 
 1. **User-Value First**: Each epic must enable users to accomplish something meaningful
+
+**CRITICAL: Epic Specification Artifacts Required**
+
+When Epics are created in OpenProject and moved to "In specification" status, the following artifacts MUST be attached before the Epic can transition to "Specified" status:
+
+1. ✅ **Epic Design Document** - Business goal, scope, success criteria, dependencies, technical considerations
+2. ✅ **Story Breakdown Document** - Complete list of all stories with goals and dependencies
+3. ✅ **Epic Test Plan** (if applicable) - High-level test strategy, integration test requirements
+
+**Protocol:** Scrum Master (SM) is accountable for verifying these artifacts are attached before allowing Epic → "Specified" transition. Product Manager (PM) is responsible for creating and attaching these artifacts during Epic grooming.
 2. **Requirements Grouping**: Group related FRs that deliver cohesive user outcomes
 3. **Incremental Delivery**: Each epic should deliver value independently
 4. **Logical Flow**: Natural progression from user's perspective
@@ -208,7 +218,7 @@ Display: "**Select an Option:** [A] Advanced Elicitation [P] Party Mode [C] Cont
 
 ## CRITICAL STEP COMPLETION NOTE
 
-ONLY WHEN C is selected and the approved epics_list is saved to document, will you then load, read entire file, then execute {nextStepFile} to execute and begin story creation step.
+ONLY WHEN C is selected and the approved epics_list is saved to document, will you then load, read entire file, then execute {nextStepFile} to execute and begin Feature creation step (or story creation if Features are skipped).
 
 ---
 

@@ -98,6 +98,78 @@ archon_capabilities:
   # - find_documents (don't look for project docs here)
 ```
 
+## Consolidated RACI Matrix
+
+The following table provides a comprehensive RACI matrix for all BMAD agents across the SDLC lifecycle.
+
+**Legend:** R = Responsible, A = Accountable, C = Consulted, I = Informed
+
+### Work Package Management RACI
+
+| Activity | PM | SM | Dev | TEA | Architect | UX Designer | Analyst | Tech Writer |
+|----------|----|----|-----|-----|-----------|-------------|---------|-------------|
+| Epic Creation | R/A | I | I | I | C | I | C | I |
+| Epic Grooming | R | A | C | C | C | C | C | I |
+| Feature Creation | R/A | I | C | I | C | C | I | I |
+| Feature Grooming | R | A | C | C | C | R (UI) | I | I |
+| Story Creation | R/A | C | C | C | C | C | I | I |
+| Story Grooming | R | A | C | C | C | C (UI) | I | I |
+| Task Creation | C | C | R/A | C | C | I | I | I |
+| Bug Creation | I | I | C | R/A | I | I | I | I |
+| Bug Triage | C | A | R | C | C | I | I | I |
+
+### Status Transition RACI
+
+| Transition | PM | SM | Dev | TEA | Architect | UX Designer |
+|------------|----|----|-----|-----|-----------|-------------|
+| New → In specification | R | A | I | I | C | C |
+| In specification → Specified | R | A* | C | C | C | R (artifacts) |
+| Specified → In progress | I | A | R | I | I | I |
+| In progress → Developed | I | I | R/A | I | I | I |
+| Developed → In testing | I | I | R | A | I | I |
+| In testing → Tested | I | I | C | R/A | I | I |
+| In testing → Test failed | I | I | I | R/A | I | I |
+| Tested → Closed | A | R | I | I | I | I |
+
+*SM is Accountable for verifying specification artifacts before allowing "In specification" → "Specified" transition.
+
+### Artifact Ownership RACI
+
+| Artifact | PM | SM | Dev | TEA | Architect | UX Designer | Analyst | Tech Writer |
+|----------|----|----|-----|-----|-----------|-------------|---------|-------------|
+| Product Brief | A | I | I | I | C | I | R | I |
+| PRD | R/A | C | C | C | C | C | C | I |
+| Epic Design Doc | R | A | C | C | C | C | C | I |
+| Feature Architecture | C | I | C | I | R/A | I | I | C |
+| API Documentation | C | I | C | C | R/A | I | I | C |
+| UI Mockups | A | C | C | I | C | R | I | I |
+| Acceptance Criteria | R/A | A | C | C | C | C | I | I |
+| Test Strategy | C | I | C | R/A | C | I | I | I |
+| Test Cases | I | I | C | R/A | I | I | I | I |
+| Implementation Notes | I | I | R/A | I | I | I | I | I |
+| Technical Documentation | C | I | C | I | C | I | I | R/A |
+| Sprint Reports | C | R/A | I | I | I | I | I | I |
+
+### Tool Usage RACI
+
+| Tool | PM | SM | Dev | TEA | Architect | UX Designer | Analyst | Tech Writer |
+|------|----|----|-----|-----|-----------|-------------|---------|-------------|
+| OpenProject MCP - Work Packages | R | R | R | R | R | C | C | C |
+| OpenProject MCP - Attachments | R | A | R | R | R | R | R | R |
+| OpenProject MCP - Status Updates | R | A | R | R | C | I | I | I |
+| GenImage MCP - Mockups | C | I | C | I | C | R/A | I | I |
+| Archon MCP - External Search | R | I | R | R | R | R | R | R |
+
+### Integration Testing RACI
+
+| Activity | PM | SM | Dev | TEA | Architect | UX Designer |
+|----------|----|----|-----|-----|-----------|-------------|
+| Feature Integration Test Plan | C | I | C | R/A | C | I |
+| Live System Dependency Check | I | I | C | R/A | C | I |
+| Infrastructure Story Creation | C | A | C | R | R | I |
+| Integration Test Execution | I | I | C | R/A | I | I |
+| Integration Test Results Review | A | R | C | R | C | I |
+
 ## Agent-Specific Integration Behaviors
 
 ### PM Agent Integration
@@ -105,21 +177,43 @@ archon_capabilities:
 ```yaml
 pm_integration:
   primary_actions:
-    - Create Epics from product brief
-    - Create User Stories from PRD with full acceptance criteria
+    - **Grooming (Responsible):** Create and groom Epics, Features, User Stories using OpenProject MCP tools
+    - Create Epics using `mcp_openproject_create_work_package(type_id=config.openproject.types.epic)`
+    - Create Features using `mcp_openproject_create_work_package(type_id=config.openproject.types.feature)` (recommended for new epics)
+    - Create User Stories using `mcp_openproject_create_work_package(type_id=config.openproject.types.user_story)`
+    - Set parent relationships using `mcp_openproject_set_work_package_parent()`
+    - **Epic Grooming:** When Epic is "In specification", ensure all required artifacts are attached:
+      - Epic Design Document
+      - Story Breakdown Document
+      - Epic Test Plan (if applicable)
+    - **Feature Grooming:** When Feature is "In specification", ensure all required artifacts are attached:
+      - Feature Architecture Document
+      - API Documentation (if Feature includes APIs)
+      - UI Mocks/Designs (if Feature includes UI)
+      - Feature Scope Document
+    - **Story Grooming:** When Story is "In specification", ensure all required artifacts are attached:
+      - Acceptance Criteria Document (or in description)
+      - UI Mocks/Designs (if Story includes UI)
+      - Technical Specifications (if Story requires technical details)
+    - Update Epic/Feature status → "In progress" when first story starts (automatic via helper functions)
     - Store product briefs as Project-level attachments in OpenProject
     - Store PRDs as Epic-level attachments in OpenProject
+    - Store Feature architecture as Feature-level attachments in OpenProject
     - Search Archon for EXTERNAL research and best practices
 
   document_storage:
     product_brief: "OpenProject Project-level attachment"
     prd: "OpenProject Epic-level attachment"
+    feature_architecture: "OpenProject Feature-level attachment"
+    api_documentation: "OpenProject Feature-level attachment"
+    ui_mocks: "OpenProject Feature/Story-level attachment"
     research_findings: "OpenProject Project/Epic-level attachment"
 
   workflow_triggers:
     - "[PR] Create PRD" → Store as OpenProject attachment + Create work structure
-    - "[ES] Create Epics/Stories" → Create in OpenProject with docs as attachments
-    - "[IR] Implementation Readiness" → Query OpenProject
+    - "[ES] Create Epics/Features/Stories" → Create in OpenProject using MCP tools with docs as attachments
+    - "[IR] Implementation Readiness" → Query OpenProject using MCP tools
+    - Work package "In specification" → Attach required artifacts → Request SM approval for "Specified" status
 ```
 
 ### Dev Agent Integration
@@ -127,10 +221,12 @@ pm_integration:
 ```yaml
 dev_integration:
   primary_actions:
-    - Query assigned tasks from OpenProject
-    - Update task status in OpenProject
+    - Query assigned tasks/bugs from OpenProject using `mcp_openproject_list_work_packages()`
+    - Update task status using `mcp_openproject_update_work_package()`: New → In progress → Developed → In testing
+    - Update bug status using `mcp_openproject_update_work_package()`: New → In progress → Developed → In testing
+    - **CRITICAL:** Use `update_task_status_and_parent()` function when updating task status to automatically update parent Story
     - Search Archon for EXTERNAL patterns and documentation
-    - Log time against work packages
+    - Log time against work packages using `mcp_openproject_log_time()`
     - Store implementation notes as Task-level attachments in OpenProject
 
   document_storage:
@@ -139,9 +235,11 @@ dev_integration:
     code_documentation: "OpenProject Task-level attachment"
 
   workflow_triggers:
-    - Start task → Update OpenProject status to In Progress
+    - Start task → Update OpenProject status to "In progress" using MCP tools
     - Implementation → Search Archon for EXTERNAL patterns/examples
-    - Complete task → Store notes in OpenProject + Update status
+    - Mark developed → Update OpenProject status to "Developed" using MCP tools
+    - Mark ready for testing → Update OpenProject status to "In testing" using MCP tools + call `update_task_status_and_parent()`
+    - Complete task → Store notes in OpenProject + Update status using MCP tools
 ```
 
 ### Architect Agent Integration
@@ -166,11 +264,18 @@ architect_integration:
     - Technical decision → Store ADR as OpenProject attachment
 ```
 
-### SM Agent Integration
+### SM Agent Integration (Scrum Master)
 
 ```yaml
 sm_integration:
   primary_actions:
+    - **Protocol Enforcement (Accountable):** Verify required artifacts before allowing work packages to transition from "In specification" to "Specified"
+    - **Epic Specification Protocol:** Verify Epic Design Document, Story Breakdown Document, Epic Test Plan (if applicable) are attached
+    - **Feature Specification Protocol:** Verify Feature Architecture Document, API Documentation (if APIs), UI Mocks (if UI), Feature Scope Document are attached
+    - **Story Specification Protocol:** Verify Acceptance Criteria, UI Mocks (if UI), Technical Specifications (if required) are attached
+    - Use `mcp_openproject_list_work_package_attachments()` to check artifacts
+    - Use helper functions: `verify_feature_specification_artifacts()`, `verify_story_specification_artifacts()`
+    - Block status transitions if artifacts are missing
     - Sprint planning using OpenProject
     - Status reporting from OpenProject
     - Blocker tracking in OpenProject
@@ -183,28 +288,40 @@ sm_integration:
   workflow_triggers:
     - "[SP] Sprint Planning" → Query/update OpenProject
     - "[SS] Sprint Status" → Generate report, store in OpenProject
+    - Work package "In specification" → "Specified" transition → Verify artifacts before allowing
 ```
 
-### TEA Agent Integration
+### TEA Agent Integration (Test Team)
 
 ```yaml
 tea_integration:
   primary_actions:
-    - Create test work packages in OpenProject
+    - Create test work packages in OpenProject using `mcp_openproject_create_work_package()`
+    - Create Bugs when validation fails using `mcp_openproject_create_work_package(type_id=config.openproject.types.bug)`
+    - Update task status: In testing → Tested → Closed using `mcp_openproject_update_work_package()`
+    - Update bug status: In testing → Tested → Closed using `mcp_openproject_update_work_package()`
+    - Run Feature-level integration tests and update Feature status: In testing → Tested → Closed
+    - **CRITICAL:** 
+      - Use `update_task_status_and_parent()` when closing tasks
+      - Use `update_bug_status_and_check_story()` when closing bugs
     - Store test strategies as Feature-level attachments in OpenProject
     - Store test cases as Story-level attachments in OpenProject
-    - Update test status in OpenProject
+    - Store Feature integration test plans as Feature-level attachments in OpenProject
     - Search Archon for EXTERNAL testing patterns
 
   document_storage:
     test_strategy: "OpenProject Feature-level attachment"
+    feature_integration_test_plan: "OpenProject Feature-level attachment"
     test_cases: "OpenProject Story-level attachment"
     test_results: "OpenProject Story/Task-level attachment"
 
   workflow_triggers:
     - Test planning → Search Archon for EXTERNAL patterns + Store strategy in OpenProject
     - Test creation → Create work packages + Attach test cases in OpenProject
-    - Test execution → Update status in OpenProject
+    - Test execution → Update status in OpenProject using MCP tools
+    - Feature integration testing → Run tests, update Feature status using MCP tools
+    - Bug creation → Create bug using MCP tools, assign to dev
+    - Bug validation → Validate fixes, update bug status using MCP tools
 ```
 
 ## Integration Menu Items
@@ -265,10 +382,17 @@ All settings come from `_bmad/_config/project-config.yaml`:
 | `openproject.types.feature`        | Feature type ID             |
 | `openproject.types.user_story`     | User Story type ID          |
 | `openproject.types.task`           | Task type ID                |
-| `openproject.statuses.new`         | New status ID               |
-| `openproject.statuses.in_progress` | In Progress status ID       |
-| `openproject.statuses.in_testing`  | In Testing status ID        |
-| `openproject.statuses.closed`      | Closed status ID            |
+| `openproject.statuses.new`              | New status ID               |
+| `openproject.statuses.in_specification` | In specification status ID  |
+| `openproject.statuses.specified`        | Specified status ID         |
+| `openproject.statuses.in_progress`      | In Progress status ID        |
+| `openproject.statuses.developed`        | Developed status ID          |
+| `openproject.statuses.in_testing`       | In Testing status ID         |
+| `openproject.statuses.tested`            | Tested status ID             |
+| `openproject.statuses.test_failed`      | Test failed status ID        |
+| `openproject.statuses.closed`           | Closed status ID             |
+| `openproject.statuses.on_hold`          | On hold status ID            |
+| `openproject.statuses.rejected`         | Rejected status ID           |
 | `archon.rag.default_match_count`   | Default search result count |
 
 ## Usage Example

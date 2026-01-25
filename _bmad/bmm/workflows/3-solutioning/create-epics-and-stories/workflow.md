@@ -12,6 +12,33 @@ web_bundle: true
 
 ---
 
+## RACI MATRIX
+
+| Activity | PM | SM | Dev | TEA | Architect | UX Designer |
+|----------|----|----|-----|-----|-----------|-------------|
+| Epic Creation | R/A | I | C | I | C | C |
+| Feature Creation | R/A | I | C | I | C | C |
+| Story Creation | R/A | C | C | I | C | C |
+| Task Definition | R | C | C | C | C | I |
+| Acceptance Criteria | R/A | A | C | C | I | C |
+| Technical Decomposition | C | I | R | I | A | I |
+| UI Story Definition | R | I | C | I | I | A |
+| Test Task Creation | R | C | C | A | I | I |
+| Integration Test Story | R | I | C | R/A | I | I |
+
+**Legend:** R = Responsible, A = Accountable, C = Consulted, I = Informed
+
+### Key RACI Notes
+- **PM** is Responsible and Accountable for creating Epics, Features, Stories
+- **PM** must check for existing work packages before creating (duplicate prevention)
+- **PM** must ensure incremental development structure (no forward dependencies)
+- **Architect** is Consulted on technical decomposition and feature architecture
+- **UX Designer** is Accountable for UI-related story definitions
+- **TEA** is Accountable for Integration Test Story creation at Feature level
+- **SM** is Accountable for verifying artifacts before "Specified" status
+
+---
+
 ## WORKFLOW ARCHITECTURE
 
 This uses **step-file architecture** for disciplined execution:

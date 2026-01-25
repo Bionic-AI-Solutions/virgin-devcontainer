@@ -1,5 +1,6 @@
 {
 	"name": "Node.js & Python Development",
+	"containerName": "${localWorkspaceFolderBasename}",
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": ".."

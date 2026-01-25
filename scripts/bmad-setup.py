@@ -80,10 +80,16 @@ def generate_claude_md():
         
         # Statuses
         '{{STATUS_NEW}}': str(op.get('statuses', {}).get('new', 71)),
+        '{{STATUS_IN_SPECIFICATION}}': str(op.get('statuses', {}).get('in_specification', 72)),
+        '{{STATUS_SPECIFIED}}': str(op.get('statuses', {}).get('specified', 73)),
         '{{STATUS_IN_PROGRESS}}': str(op.get('statuses', {}).get('in_progress', 77)),
+        '{{STATUS_DEVELOPED}}': str(op.get('statuses', {}).get('developed', 78)),
         '{{STATUS_IN_TESTING}}': str(op.get('statuses', {}).get('in_testing', 79)),
+        '{{STATUS_TESTED}}': str(op.get('statuses', {}).get('tested', 80)),
+        '{{STATUS_TEST_FAILED}}': str(op.get('statuses', {}).get('test_failed', 81)),
         '{{STATUS_CLOSED}}': str(op.get('statuses', {}).get('closed', 82)),
         '{{STATUS_ON_HOLD}}': str(op.get('statuses', {}).get('on_hold', 83)),
+        '{{STATUS_REJECTED}}': str(op.get('statuses', {}).get('rejected', 84)),
         
         # Priorities
         '{{PRIORITY_LOW}}': str(op.get('priorities', {}).get('low', 72)),

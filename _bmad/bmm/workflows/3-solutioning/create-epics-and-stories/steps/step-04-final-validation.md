@@ -93,6 +93,10 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 
 ### 3. Story Quality Validation
 
+**CRITICAL:** Every Story MUST have a test task (Task X.Y.T). Verify this requirement is met.
+
+**CRITICAL: INCREMENTAL DEVELOPMENT** - Verify each story can be verified with previously implemented work, NOT dependent on future work.
+
 **Each story must:**
 
 - Be completable by a single dev agent
@@ -101,8 +105,21 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 - Include necessary technical details
 - **Not have forward dependencies** (can only depend on PREVIOUS stories)
 - Be implementable without waiting for future stories
+- **Be verifiable incrementally** - can be tested with previous work, not blocked by future work
+- **Dependencies flow forward only** - Story N can depend on Story N-1, N-2, etc., but NOT on Story N+1
 
-### 4. Epic Structure Validation
+### 4. Feature Structure Validation (if Features exist)
+
+**Check that:**
+
+- Features represent functional capabilities, not technical layers
+- Features are appropriately sized for integration testing
+- Features have clear scope (included/excluded)
+- Integration test scope is identified for each Feature
+- Stories are properly organized under Features
+- **MANDATORY: Each Feature has an Integration Test Story (Story X.Y.T) identified/created** - Feature cannot be closed without this story
+
+### 5. Epic Structure Validation
 
 **Check that:**
 
@@ -110,8 +127,9 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 - Dependencies flow naturally
 - Foundation stories only setup what's needed
 - No big upfront technical work
+- Features (if present) properly organize stories
 
-### 5. Dependency Validation (CRITICAL)
+### 6. Dependency Validation (CRITICAL)
 
 **Epic Independence Check:**
 
@@ -122,16 +140,32 @@ Review the complete epic and story breakdown to ensure EVERY FR is covered:
 - ✅ RIGHT: Each epic is independently valuable
 
 **Within-Epic Story Dependency Check:**
-For each epic, review stories in order:
+For each epic (and Feature if applicable), review stories in order:
 
-- Can Story N.1 be completed without Stories N.2, N.3, etc.?
-- Can Story N.2 be completed using only Story N.1 output?
-- Can Story N.3 be completed using only Stories N.1 & N.2 outputs?
+- **If Features exist**: Check dependencies within Feature (Story N.F.1, N.F.2, etc.)
+- **If no Features**: Check dependencies within Epic (Story N.1, N.2, etc.)
+- Can Story N.F.1 (or N.1) be completed without future stories?
+- Can Story N.F.2 (or N.2) be completed using only previous story output?
+- Can Story N.F.3 (or N.3) be completed using only previous stories?
 - ❌ WRONG: "This story depends on a future story"
 - ❌ WRONG: Story references features not yet implemented
 - ✅ RIGHT: Each story builds only on previous stories
 
-### 6. Complete and Save
+**Feature Dependency Check (if Features exist):**
+- Can Feature N.1 be completed without Feature N.2?
+- Can Feature N.2 use Feature N.1 outputs but function independently?
+- ✅ RIGHT: Features can build on previous Features but must be independently testable
+
+### 7. Feature Integration Test Requirements Validation (if Features exist)
+
+**Check that:**
+
+- Each Feature has identified integration test scope
+- Feature integration test requirements are documented
+- Features are sized appropriately for integration testing
+- Feature boundaries are clear and testable
+
+### 8. Complete and Save
 
 If all validations pass:
 

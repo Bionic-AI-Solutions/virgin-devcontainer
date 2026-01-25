@@ -37,9 +37,24 @@ This document provides the complete epic and story breakdown for {{project_name}
 
 {{epic_goal_N}}
 
-<!-- Repeat for each story (M = 1, 2, 3...) within epic N -->
+<!-- If Features exist, repeat for each Feature (F = 1, 2, 3...) within epic N -->
+<!-- If no Features, skip Feature section and go directly to stories -->
 
-### Story {{N}}.{{M}}: {{story_title_N_M}}
+### Feature {{N}}.{{F}}: {{feature_name_N_F}}
+
+**Functional Capability:** {{feature_description}}
+
+**Scope:**
+- **Included:** {{stories_and_functionality_included}}
+- **Excluded:** {{functionality_explicitly_excluded}}
+
+**Integration Test Scope:**
+{{what_will_be_tested_at_feature_level}}
+
+<!-- Repeat for each story (M = 1, 2, 3...) within Feature F (or Epic N if no Features) -->
+
+### Story {{N}}.{{F}}.{{M}}: {{story_title_N_F_M}}
+<!-- OR Story {{N}}.{{M}}: {{story_title_N_M}} if no Features -->
 
 As a {{user_type}},
 I want {{capability}},

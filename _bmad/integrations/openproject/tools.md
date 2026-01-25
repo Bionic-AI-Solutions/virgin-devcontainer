@@ -163,24 +163,23 @@ These are typical defaults - verify with `mcp_openproject_list_types()`:
 
 ## Standard Status IDs
 
-These are typical defaults - verify with `mcp_openproject_list_statuses()`:
+**CRITICAL:** These are typical defaults - **ALWAYS verify with `mcp_openproject_list_statuses()`** and configure actual IDs in `_bmad/_config/project-config.yaml`.
 
-| Status           | Default ID | Description                |
-| ---------------- | ---------- | -------------------------- |
-| New              | 71         | Initial state              |
-| In specification | 72         | Requirements being defined |
-| Specified        | 73         | Requirements complete      |
-| Confirmed        | 74         | Approved for work          |
-| To be scheduled  | 75         | Ready for sprint           |
-| Scheduled        | 76         | In sprint backlog          |
-| In progress      | 77         | Active development         |
-| Developed        | 78         | Code complete              |
-| In testing       | 79         | Under review/testing       |
-| Tested           | 80         | Testing complete           |
-| Test failed      | 81         | Failed testing             |
-| Closed           | 82         | Complete                   |
-| On hold          | 83         | Paused                     |
-| Rejected         | 84         | Not proceeding             |
+| Status Name       | Default ID | Description                | Usage in BMAD |
+| ----------------- | ---------- | -------------------------- | ------------- |
+| New               | 71         | Initial state              | All work packages |
+| In specification  | 72         | Requirements being defined | Optional planning phase |
+| Specified         | 73         | Requirements complete      | Optional planning phase |
+| In progress       | 77         | Active development         | Main development phase |
+| Developed         | 78         | Code/implementation complete | After development, before testing |
+| In testing        | 79         | Under review/testing       | Testing phase |
+| Tested            | 80         | Testing complete and passed | After successful testing |
+| Test failed       | 81         | Testing failed, needs rework | Error path |
+| Closed            | 82         | Complete                   | End of successful journey |
+| On hold           | 83         | Paused                     | Optional pause state |
+| Rejected          | 84         | Not proceeding             | Optional cancellation |
+
+**Note:** Additional statuses may exist in your OpenProject instance. Always query `mcp_openproject_list_statuses()` to get actual status IDs and names.
 
 ## Standard Priority IDs
 
@@ -193,32 +192,100 @@ These are typical defaults - verify with `mcp_openproject_list_statuses()`:
 
 ## Common Usage Patterns
 
-### Create Epic with Stories
+### Create Epic with Features and Stories
+
+**CRITICAL: Always check for existing work packages before creating**
 
 ```python
-# 1. Create Epic
-epic = mcp_openproject_create_work_package(
-    project_id={config.openproject.project_id},
-    subject="Epic 1: Feature Name",
-    type_id={config.openproject.types.epic},
-    description="Epic description...",
-    priority_id={config.openproject.priorities.high}
-)
-epic_id = epic["work_package"]["id"]
+# Helper functions for duplicate checking
+def check_existing_epic(project_id: int, epic_subject: str) -> dict | None:
+    """Check if Epic already exists."""
+    epics = mcp_openproject_list_work_packages(
+        project_id=project_id,
+        filters=json.dumps([{"type": {"operator": "=", "values": [config.openproject.types.epic]}}]),
+        status="all"
+    )
+    for epic in epics.get("work_packages", []):
+        if epic_subject.lower() in epic["subject"].lower() or epic["subject"].lower() in epic_subject.lower():
+            return epic
+    return None
 
-# 2. Create User Story under Epic
-story = mcp_openproject_create_work_package(
-    project_id={config.openproject.project_id},
-    subject="Story 1.1: Story Name",
-    type_id={config.openproject.types.user_story},
-    description="As a... I want... So that..."
-)
+def check_existing_feature(epic_id: int, feature_subject: str) -> dict | None:
+    """Check if Feature already exists under Epic."""
+    children = mcp_openproject_get_work_package_children(parent_id=epic_id, status="all")
+    for child in children.get("children", []):
+        if child["type"] == "Feature" and (feature_subject.lower() in child["subject"].lower() or child["subject"].lower() in feature_subject.lower()):
+            return child
+    return None
 
-# 3. Set parent relationship
-mcp_openproject_set_work_package_parent(
-    work_package_id=story["work_package"]["id"],
-    parent_id=epic_id
-)
+def check_existing_story(parent_id: int, story_subject: str) -> dict | None:
+    """Check if Story already exists under parent."""
+    children = mcp_openproject_get_work_package_children(parent_id=parent_id, status="all")
+    for child in children.get("children", []):
+        if child["type"] == "User story" and (story_subject.lower() in child["subject"].lower() or child["subject"].lower() in story_subject.lower()):
+            return child
+    return None
+
+# 1. Create Epic (with duplicate check)
+epic_subject = "Epic 1: Epic Name"
+existing_epic = check_existing_epic(project_id={config.openproject.project_id}, epic_subject=epic_subject)
+
+if existing_epic:
+    epic_id = existing_epic["id"]
+    epic = mcp_openproject_update_work_package(work_package_id=epic_id, description="Updated epic description...")
+    print(f"Updated existing Epic {epic_id}")
+else:
+    epic = mcp_openproject_create_work_package(
+        project_id={config.openproject.project_id},
+        subject=epic_subject,
+        type_id={config.openproject.types.epic},
+        description="Epic description...",
+        status_id={config.openproject.statuses.new},
+        priority_id={config.openproject.priorities.high}
+    )
+    epic_id = epic["work_package"]["id"]
+
+# 2. Create Feature under Epic (with duplicate check)
+feature_subject = "Feature: Feature Name"
+existing_feature = check_existing_feature(epic_id=epic_id, feature_subject=feature_subject)
+
+if existing_feature:
+    feature_id = existing_feature["id"]
+    feature = mcp_openproject_update_work_package(work_package_id=feature_id, description="Updated functional capability description...")
+    print(f"Updated existing Feature {feature_id}")
+else:
+    feature = mcp_openproject_create_work_package(
+        project_id={config.openproject.project_id},
+        subject=feature_subject,
+        type_id={config.openproject.types.feature},
+        description="Functional capability description...",
+        status_id={config.openproject.statuses.new},
+        priority_id={config.openproject.priorities.high}
+    )
+    feature_id = feature["work_package"]["id"]
+    mcp_openproject_set_work_package_parent(work_package_id=feature_id, parent_id=epic_id)
+
+# 3. Create User Story under Feature (with duplicate check)
+story_subject = "Story 1.1.1: Story Name"  # Epic.Feature.Story numbering
+existing_story = check_existing_story(parent_id=feature_id, story_subject=story_subject)
+
+if existing_story:
+    story_id = existing_story["id"]
+    story = mcp_openproject_update_work_package(work_package_id=story_id, description="Updated story description...")
+    print(f"Updated existing Story {story_id}")
+else:
+    story = mcp_openproject_create_work_package(
+        project_id={config.openproject.project_id},
+        subject=story_subject,
+        type_id={config.openproject.types.user_story},
+        description="As a... I want... So that...",
+        status_id={config.openproject.statuses.new},
+        priority_id={config.openproject.priorities.normal}
+    )
+    story_id = story["work_package"]["id"]
+    mcp_openproject_set_work_package_parent(work_package_id=story_id, parent_id=feature_id)
+
+# Note: If no Features, link Story directly to Epic and use "Story 1.1" numbering
 ```
 
 ### Work Status Flow
@@ -227,20 +294,35 @@ mcp_openproject_set_work_package_parent(
 # Start work
 mcp_openproject_update_work_package(
     work_package_id=work_id,
-    status_id={config.openproject.workflow.start_work_status}
+    status_id={config.openproject.statuses.in_progress}
 )
 
-# Move to review
+# Mark developed (after implementation complete)
 mcp_openproject_update_work_package(
     work_package_id=work_id,
-    status_id={config.openproject.workflow.review_status}
+    status_id={config.openproject.statuses.developed}
+)
+
+# Move to review/testing
+mcp_openproject_update_work_package(
+    work_package_id=work_id,
+    status_id={config.openproject.statuses.in_testing}
+)
+
+# Mark tested (after validation passes)
+mcp_openproject_update_work_package(
+    work_package_id=work_id,
+    status_id={config.openproject.statuses.tested}
 )
 
 # Complete
 mcp_openproject_update_work_package(
     work_package_id=work_id,
-    status_id={config.openproject.workflow.complete_status}
+    status_id={config.openproject.statuses.closed}
 )
+
+# For Tasks: Use update_task_status_and_parent() to automatically update parent Story
+# For Bugs: Use update_bug_status_and_check_story() to check parent Story when closing
 ```
 
 ### Query Open Work

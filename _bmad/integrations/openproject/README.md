@@ -72,24 +72,27 @@ Each BMAD agent has specific OpenProject responsibilities:
 
 | Agent | Work Management | Document Storage |
 |-------|-----------------|------------------|
-| **PM** | Create Epics, Features, User Stories | Product briefs (Project), PRDs (Epic) |
-| **Dev** | Query/update Tasks, log time | Implementation notes (Task) |
-| **SM** | Sprint planning, status reporting | Sprint reports (Project) |
+| **PM** | **Grooming (Responsible):** Create and groom Epics, Features, User Stories. When "In specification", attach required artifacts. Update Epic/Feature status → "In progress" when first story starts | Product briefs (Project), PRDs (Epic), Feature architecture (Feature), API docs (Feature), UI mocks (Feature/Story) |
+| **Dev** | Query/update Tasks/Bugs. Use `update_task_status_and_parent()` for task status updates | Implementation notes (Task) |
+| **SM** | **Protocol Enforcement (Accountable):** Verify required artifacts before allowing "In specification" → "Specified" transitions. Sprint planning, status reporting | Sprint reports (Project) |
 | **Architect** | Create technical tasks | Architecture docs (Feature), System design (Project) |
-| **TEA** | Create test tasks, update bugs | Test strategy (Feature), Test cases (Story) |
+| **TEA** | Create test tasks, Bugs. Run Feature integration tests. Use `update_task_status_and_parent()` and `update_bug_status_and_check_story()` | Test strategy (Feature), Test cases (Story), Feature integration test plans (Feature) |
 
 ## Core Workflow
 
 ```
 1. GET WORK    → mcp_openproject_list_work_packages(project_id, "open")
-2. START       → mcp_openproject_update_work_package(id, status_id=77)
+2. START       → mcp_openproject_update_work_package(id, status_id={config.openproject.statuses.in_progress})
 3. RESEARCH    → Search Archon for EXTERNAL knowledge (library docs, patterns)
 4. IMPLEMENT   → Write code
-5. DOCUMENT    → Attach implementation docs to Task in OpenProject
-6. REVIEW      → mcp_openproject_update_work_package(id, status_id=79)
-7. COMPLETE    → mcp_openproject_update_work_package(id, status_id=82)
-8. NEXT        → Return to step 1
+5. DEVELOPED   → mcp_openproject_update_work_package(id, status_id={config.openproject.statuses.developed})
+6. REVIEW      → mcp_openproject_update_work_package(id, status_id={config.openproject.statuses.in_testing})
+7. TESTED      → mcp_openproject_update_work_package(id, status_id={config.openproject.statuses.tested})
+8. COMPLETE    → mcp_openproject_update_work_package(id, status_id={config.openproject.statuses.closed})
+9. NEXT        → Return to step 1
 ```
+
+**CRITICAL:** Always use `config.openproject.statuses.{status_name}`, never hardcode status IDs.
 
 ## Troubleshooting
 

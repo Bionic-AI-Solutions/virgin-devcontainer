@@ -105,7 +105,7 @@ This workflow supports different bug management activities:
 3. Investigate issue
 4. Implement fix
 5. Run tests
-6. Update bug status to "In testing" (79)
+6. Update bug status progression: "In progress" → "Developed" → "In testing" (use config.openproject.statuses.*)
 7. Add comment with fix details:
    - What was fixed
    - How it was fixed
@@ -113,7 +113,7 @@ This workflow supports different bug management activities:
 
 ### Step 3: Bug Fix Validation (Test Team)
 
-**When:** Bug is marked "In testing" (79) after dev fix
+**When:** Bug is marked "In testing" after dev marks fix ready for validation
 
 **Process:**
 1. Get bug from OpenProject
@@ -122,42 +122,50 @@ This workflow supports different bug management activities:
 4. Verify bug is resolved
 5. Verify no regressions
 6. Update bug status:
-   - "Closed" (82) if validated
-   - "Test failed" (81) if incomplete → Dev fixes again, iterate
+   - "Tested" (if validation passes - intermediate state)
+   - "Closed" (after Tested, when bug fully resolved)
+   - "Test failed" (if validation fails → Dev fixes again, iterate)
 
 ### Step 4: Bug Iteration
 
 **When:** Bug fix validation fails
 
 **Process:**
-1. Bug status "Test failed" (81)
+1. Bug status "Test failed"
 2. Add comment explaining why fix incomplete
-3. Dev fixes again → Bug status "In testing" (79)
-4. Test validates again → Repeat until bug "Closed" (82)
+3. Dev fixes again → Bug status progression: "In progress" → "Developed" → "In testing"
+4. Test validates again → "Tested" → "Closed" (or iterate if fails)
 
 ### Step 5: Story Re-validation
 
-**When:** All bugs for a story are "Closed" (82)
+**When:** All bugs for a story are "Closed"
 
 **Process:**
 1. Verify all bugs closed
-2. Re-run story validation
-3. If validation passes → Story "Closed" (82)
-4. If validation fails → Create new bugs → Iterate
+2. **CRITICAL:** Call `update_bug_status_and_check_story()` function when closing bugs to automatically check parent Story status
+3. Re-run story validation
+4. If validation passes → Story "Closed"
+5. If validation fails → Create new bugs → Iterate
 
 ---
 
 ## BUG STATUS FLOW
 
 ```
-New (71) [Test team creates]
+New [Test team creates]
     ↓
-In progress (77) [Dev fixes]
+In progress [Dev starts fix]
     ↓
-In testing (79) [Dev completes fix]
+Developed [Dev completes fix implementation]
     ↓
-Closed (82) [Test validates] OR Test failed (81) [Iterate]
+In testing [Dev marks ready for testing]
+    ↓
+Tested [Test validates fix successfully]
+    ↓
+Closed [Test closes bug] OR Test failed [Iterate]
 ```
+
+**Note:** Status IDs should be retrieved from OpenProject configuration. Replace hardcoded IDs (71, 77, 79, 82, 81) with `config.openproject.statuses.{status_name}` references.
 
 ---
 
@@ -199,10 +207,8 @@ Closed (82) [Test validates] OR Test failed (81) [Iterate]
 
 ## REFERENCES
 
-- **Test Validation Workflow:** `_bmad/bmm/workflows/4-implementation/test-validation/workflow.yaml`
-- **QA Testing Workflow:** `docs/QA_TESTING_WORKFLOW.md`
-- **Complete Agile Workflow:** `docs/COMPLETE_AGILE_WORKFLOW.md`
-- **Task Management:** `docs/TASK_MANAGEMENT_PROCESS.md`
+- **Epic-Story Lifecycle:** `@bmad/bmm/workflows/epic-story-lifecycle` - Bug journey and status transitions
+- **Test Validation Workflow:** `@bmad/bmm/workflows/4-implementation/test-validation`
 
 
 

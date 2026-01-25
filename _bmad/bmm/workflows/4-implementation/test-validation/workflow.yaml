@@ -12,6 +12,39 @@ web_bundle: true
 
 ---
 
+## RACI MATRIX
+
+| Activity | PM | SM | Dev | TEA | Architect |
+|----------|----|----|-----|-----|-----------|
+| Task Validation | I | I | C | R/A | I |
+| Story Validation | I | I | C | R/A | I |
+| Feature Integration Testing | I | I | C | R/A | C |
+| Bug Creation | I | I | I | R/A | I |
+| Bug Fix Validation | I | I | C | R/A | I |
+| Story Closure Approval | A | R | I | R | I |
+| Feature Closure Approval | A | R | I | R | I |
+| Epic Closure Approval | A | R | I | R | I |
+| Live System Dependency Check | I | I | C | R/A | C |
+| Infrastructure Story Creation | C | A | C | R | R |
+
+**Legend:** R = Responsible, A = Accountable, C = Consulted, I = Informed
+
+### Key RACI Notes
+- **TEA** is Responsible and Accountable for all validation activities
+- **TEA** must check live system dependencies BEFORE running integration tests
+- **TEA** must NOT use mocks or fixtures for integration tests - live systems only
+- **TEA** creates Infrastructure stories if live system dependencies are unavailable
+- **SM** is Accountable for process compliance and closure approvals
+- **PM** has final Accountability for work package acceptance
+- **Dev** is Consulted for implementation details during validation
+
+### Critical Integration Testing Rules
+- Unit tests MAY use mocks and fixtures
+- Integration tests MUST use live systems
+- If live system unavailable: STOP tests, flag issue, create Infrastructure story
+
+---
+
 ## WORKFLOW ARCHITECTURE
 
 This uses **step-file architecture** for disciplined execution:
@@ -40,10 +73,11 @@ This workflow supports validation at different levels:
 
 | Mode | Purpose | Entry Point | Output |
 |------|---------|-------------|--------|
-| **Task Validation** | Validate individual task | Task marked "In testing" (79) | Task "Closed" (82) or bug created |
-| **Story Validation** | Validate complete story | All tasks closed, story "In testing" (79) | Story "Closed" (82) or bugs created |
-| **Bug Fix Validation** | Validate bug fix | Bug marked "In testing" (79) | Bug "Closed" (82) or iterate |
-| **Epic Closure** | Close epic | All stories closed | Epic "Closed" (82) |
+| **Task Validation** | Validate individual task | Task marked "In testing" | Task "Tested" → "Closed" or bug created |
+| **Story Validation** | Validate complete story | All tasks closed, story "In testing" | Story "Closed" or bugs created |
+| **Feature Integration Testing** | Run Feature-level integration tests | All stories closed, Feature "In testing" | Feature "Tested" → "Closed" or "Test failed" |
+| **Bug Fix Validation** | Validate bug fix | Bug marked "In testing" | Bug "Tested" → "Closed" or iterate |
+| **Epic Closure** | Close epic | All stories closed | Epic "Closed" |
 
 ---
 
@@ -78,7 +112,7 @@ This workflow supports validation at different levels:
    - Test results
 4. Set bug priority (High 74, Normal 73, Low 72)
 5. Assign bug to dev
-6. Set bug status to "New" (71)
+6. Set bug status to "New" (from config.openproject.statuses.new)
 
 ### Step 3: Story Validation
 
@@ -116,26 +150,60 @@ This workflow supports validation at different levels:
 ### Step 5: Story Closure
 
 **Prerequisites:**
-- ✅ All tasks "Closed" (82)
-- ✅ All bugs "Closed" (82)
+- ✅ **MANDATORY: Test task (Task X.Y.T) exists AND is "Closed"**
+- ✅ All other tasks "Closed"
+- ✅ All bugs "Closed"
 - ✅ Story validation passed
+
+**CRITICAL:** Story cannot be closed if test task is missing or not closed. The `update_story_status_based_on_tasks()` helper function enforces this requirement.
 
 **Process:**
 1. Verify all prerequisites
-2. Close story (status 82)
+2. Close story (status from config.openproject.statuses.closed)
 3. Add final comment summarizing completion
 
-### Step 6: Epic Closure
+### Step 6: Feature Integration Testing
+
+**When:** All stories for a Feature are "Closed" (Feature automatically goes to "In testing")
 
 **Prerequisites:**
-- ✅ All stories "Closed" (82)
-- ✅ All tasks in all stories "Closed" (82)
-- ✅ All bugs in all stories "Closed" (82)
+- ✅ **MANDATORY: Integration Test Story (Story X.Y.T) exists AND is "Closed"**
+- ✅ All other stories "Closed"
+- ✅ All tasks in all stories "Closed" (including test tasks)
+- ✅ All bugs in all stories "Closed"
+- ✅ Feature status is "In testing" (automatic when all stories closed)
+
+**CRITICAL:** Feature cannot proceed to "In testing" or be closed if Integration Test Story is missing or not closed. The `update_feature_status_based_on_stories()` helper function enforces this requirement.
+
+**Process:**
+1. Verify prerequisites
+2. Create Feature integration test plan document (`feature-X-integration-test-plan.md`)
+3. Attach test plan to Feature work package
+4. Run Feature-level integration tests:
+   - Validate all stories work together
+   - Test cross-story integration points
+   - Verify Feature-level acceptance criteria
+   - Run end-to-end Feature functionality tests
+5. Update Feature status:
+   - "Tested" if integration tests pass
+   - "Test failed" if integration tests fail → Create issues → Fix → Return to "In progress" → Stories updated → "In testing" → Repeat
+6. If "Tested", close Feature (status "Closed")
+
+### Step 7: Epic Closure
+
+**Prerequisites:**
+- ✅ **MANDATORY: Test Story (Story X.T) exists AND is "Closed"**
+- ✅ All other stories "Closed"
+- ✅ All Features "Closed" (if Features exist)
+- ✅ All tasks in all stories "Closed" (including test tasks)
+- ✅ All bugs in all stories "Closed"
+
+**CRITICAL:** Epic cannot be closed if Test Story is missing or not closed. The `update_epic_status_based_on_stories()` helper function enforces this requirement.
 
 **Process:**
 1. Verify all prerequisites
 2. Run epic-level integration tests
-3. Close epic (status 82)
+3. Close epic (status "Closed")
 
 ---
 
@@ -153,16 +221,31 @@ This workflow supports validation at different levels:
 ### Story Quality Gate
 
 **Before story can be closed:**
-- ✅ All tasks closed
+- ✅ **MANDATORY: Test task (Task X.Y.T) exists AND is closed**
+- ✅ All other tasks closed
 - ✅ All bugs closed
 - ✅ All acceptance criteria met
+
+**CRITICAL:** Story cannot be closed if test task is missing or not closed. This is enforced by `update_story_status_based_on_tasks()` helper function.
 - ✅ Story integration tests pass
+- ✅ Test team validation passed
+
+### Feature Quality Gate
+
+**Before feature can be closed:**
+- ✅ All stories closed
+- ✅ All tasks in all stories closed
+- ✅ All bugs in all stories closed
+- ✅ Feature integration test plan created and attached
+- ✅ Feature-level integration tests pass
+- ✅ Feature acceptance criteria validated
 - ✅ Test team validation passed
 
 ### Epic Quality Gate
 
 **Before epic can be closed:**
 - ✅ All stories closed
+- ✅ All Features closed (if Features exist)
 - ✅ All tasks in all stories closed
 - ✅ All bugs in all stories closed
 - ✅ Epic integration tests pass
@@ -172,18 +255,17 @@ This workflow supports validation at different levels:
 
 ## INTEGRATION WITH OTHER WORKFLOWS
 
-- **dev-story:** Dev marks tasks/stories "In testing" (79) → Triggers test-validation
+- **dev-story:** Dev marks tasks/stories "In testing" → Triggers test-validation
 - **groom-story:** PM creates tasks → Dev implements → Test validates
 - **bug-management:** Test creates bugs → Dev fixes → Test validates
+- **epic-story-lifecycle:** Feature automatically goes to "In testing" when all stories closed → Triggers Feature integration testing
 
 ---
 
 ## REFERENCES
 
-- **Story Verification Standard:** `_bmad/workflows/STORY_VERIFICATION_STANDARD.md`
-- **QA Testing Workflow:** `docs/QA_TESTING_WORKFLOW.md`
-- **Complete Agile Workflow:** `docs/COMPLETE_AGILE_WORKFLOW.md`
-- **Task Management:** `docs/TASK_MANAGEMENT_PROCESS.md`
+- **Epic-Story Lifecycle:** `@bmad/bmm/workflows/epic-story-lifecycle` - Complete lifecycle and status transitions
+- **OpenProject Integration:** `@bmad/integrations/openproject` - MCP tools reference
 
 
 

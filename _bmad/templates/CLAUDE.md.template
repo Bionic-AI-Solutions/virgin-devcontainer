@@ -131,10 +131,16 @@ When creating project documents:
 | Status | ID |
 |--------|-----|
 | New | {{STATUS_NEW}} |
+| In specification | {{STATUS_IN_SPECIFICATION}} |
+| Specified | {{STATUS_SPECIFIED}} |
 | In progress | {{STATUS_IN_PROGRESS}} |
+| Developed | {{STATUS_DEVELOPED}} |
 | In testing | {{STATUS_IN_TESTING}} |
+| Tested | {{STATUS_TESTED}} |
+| Test failed | {{STATUS_TEST_FAILED}} |
 | Closed | {{STATUS_CLOSED}} |
 | On hold | {{STATUS_ON_HOLD}} |
+| Rejected | {{STATUS_REJECTED}} |
 
 ## Priority IDs
 
@@ -162,7 +168,9 @@ When creating project documents:
 
 # Important Notes
 
-- Work package status flow: New ({{STATUS_NEW}}) → In progress ({{STATUS_IN_PROGRESS}}) → In testing ({{STATUS_IN_TESTING}}) → Closed ({{STATUS_CLOSED}})
+- Work package status flow: New → In progress → Developed → In testing → Tested → Closed
+- Feature status flow: New → In progress → In testing (when all stories closed) → Tested (after integration tests) → Closed
+- Bug status flow: New → In progress → Developed → In testing → Tested → Closed
 - Keep RAG queries SHORT (2-5 keywords) for better search results
 - Higher priority_id = higher priority (Low={{PRIORITY_LOW}}, Normal={{PRIORITY_NORMAL}}, High={{PRIORITY_HIGH}}, Immediate={{PRIORITY_IMMEDIATE}})
 - Stories should be {{STORY_MIN_HOURS}} - {{STORY_MAX_HOURS}} hours of work
@@ -193,54 +201,335 @@ When creating project documents:
 ## Work Package Creation Patterns
 
 ### Creating an Epic
+
+**CRITICAL: Always check for existing Epic before creating**
+
 ```python
-epic = mcp_openproject_create_work_package(
+# Check for existing Epic
+def check_existing_epic(project_id: int, epic_subject: str) -> dict | None:
+    """Check if Epic already exists in OpenProject."""
+    epics = mcp_openproject_list_work_packages(
+        project_id=project_id,
+        filters=json.dumps([
+            {"type": {"operator": "=", "values": [{{TYPE_EPIC}}]}}
+        ]),
+        status="all"  # Include closed epics
+    )
+    for epic in epics.get("work_packages", []):
+        if epic_subject.lower() in epic["subject"].lower() or epic["subject"].lower() in epic_subject.lower():
+            return epic
+    return None
+
+epic_subject = "Epic N: Epic Name"
+existing_epic = check_existing_epic(project_id={{OPENPROJECT_PROJECT_ID}}, epic_subject=epic_subject)
+
+if existing_epic:
+    # Update existing Epic
+    epic = mcp_openproject_update_work_package(
+        work_package_id=existing_epic["id"],
+        description="Updated business goal and scope"
+    )
+    epic_id = existing_epic["id"]
+else:
+    # Create new Epic
+    epic = mcp_openproject_create_work_package(
+        project_id={{OPENPROJECT_PROJECT_ID}},
+        subject=epic_subject,
+        type_id={{TYPE_EPIC}},
+        description="Business goal and scope",
+        status_id={{STATUS_NEW}},
+        priority_id={{PRIORITY_HIGH}}
+    )
+    epic_id = epic["work_package"]["id"]
+# Attach epic specification document to this work package
+
+# MANDATORY: Create Test Story (Story X.T) for Epic
+# This must be created when creating the Epic or during Epic grooming
+test_story = mcp_openproject_create_work_package(
     project_id={{OPENPROJECT_PROJECT_ID}},
-    subject="Epic N: Epic Name",
-    type_id={{TYPE_EPIC}},
-    description="Business goal and scope",
+    subject="Story N.T: Epic N Testing and Validation",  # MANDATORY Test Story
+    type_id={{TYPE_USER_STORY}},
+    description="""
+    As a **Test Team**,
+    I want **to validate the complete Epic N functionality**,
+    So that **I can ensure all stories work together and the Epic meets its acceptance criteria**.
+    
+    **Acceptance Criteria:**
+    - **Given** all stories in Epic N are implemented
+    - **When** I run Epic-level integration tests
+    - **Then** all Epic acceptance criteria are met
+    - **And** all cross-story integration points work correctly
+    - **And** end-to-end Epic functionality is validated
+    
+    **Test Activities:**
+    1. Create Epic test plan: `epic-N-test-plan.md`
+    2. Attach test plan to Epic N
+    3. Run Epic-level integration tests
+    4. Validate all Epic acceptance criteria
+    5. Test cross-story integration points
+    6. Run end-to-end Epic functionality tests
+    """,
+    status_id={{STATUS_NEW}},
     priority_id={{PRIORITY_HIGH}}
 )
-# Attach epic specification document to this work package
+mcp_openproject_set_work_package_parent(
+    work_package_id=test_story["work_package"]["id"],
+    parent_id=epic["work_package"]["id"]
+)
+```
+
+### Creating a Feature (Recommended for new epics)
+
+**CRITICAL: Always check for existing Feature before creating**
+
+```python
+# Check for existing Feature
+def check_existing_feature(epic_id: int, feature_subject: str) -> dict | None:
+    """Check if Feature already exists under Epic."""
+    children = mcp_openproject_get_work_package_children(
+        parent_id=epic_id,
+        status="all"  # Include closed features
+    )
+    for child in children.get("children", []):
+        if child["type"] == "Feature":
+            if feature_subject.lower() in child["subject"].lower() or child["subject"].lower() in feature_subject.lower():
+                return child
+    return None
+
+feature_subject = "Feature: Feature Name"
+existing_feature = check_existing_feature(epic_id=epic_id, feature_subject=feature_subject)
+
+if existing_feature:
+    # Update existing Feature
+    feature = mcp_openproject_update_work_package(
+        work_package_id=existing_feature["id"],
+        description="""
+        ## Functional Capability
+        {Updated statement of what this feature provides}
+        
+        ## Scope
+        **Included:** {Updated stories and functionality included}
+        **Excluded:** {Updated functionality explicitly excluded}
+        
+        ## Integration Test Scope
+        {Updated what will be tested at Feature level}
+        """
+    )
+    feature_id = existing_feature["id"]
+else:
+    # Create new Feature
+    feature = mcp_openproject_create_work_package(
+        project_id={{OPENPROJECT_PROJECT_ID}},
+        subject=feature_subject,
+        type_id={{TYPE_FEATURE}},
+        description="""
+        ## Functional Capability
+        {Clear statement of what this feature provides}
+        
+        ## Scope
+        **Included:** {Stories and functionality included}
+        **Excluded:** {Functionality explicitly excluded}
+        
+        ## Integration Test Scope
+        {What will be tested at Feature level}
+        """,
+        status_id={{STATUS_NEW}},
+        priority_id={{PRIORITY_HIGH}}
+    )
+    feature_id = feature["work_package"]["id"]
+    # Set parent to Epic
+    mcp_openproject_set_work_package_parent(
+        work_package_id=feature_id,
+        parent_id=epic_id
+    )
+# Attach architecture document to Feature
+
+# MANDATORY: Create Integration Test Story (Story X.Y.T) for Feature
+# This must be created when creating the Feature or during Feature grooming
+integration_test_story = mcp_openproject_create_work_package(
+    project_id={{OPENPROJECT_PROJECT_ID}},
+    subject="Story X.Y.T: Feature X.Y Integration Testing and Validation",  # MANDATORY Integration Test Story
+    type_id={{TYPE_USER_STORY}},
+    description="""
+    As a **Test Team**,
+    I want **to validate the complete Feature X.Y functionality**,
+    So that **I can ensure all stories work together and the Feature meets its acceptance criteria**.
+    
+    **Acceptance Criteria:**
+    - **Given** all stories in Feature X.Y are implemented
+    - **When** I run Feature-level integration tests
+    - **Then** all Feature acceptance criteria are met
+    - **And** all cross-story integration points work correctly
+    - **And** end-to-end Feature functionality is validated
+    
+    **Test Activities:**
+    1. Create Feature integration test plan: `feature-X-Y-integration-test-plan.md`
+    2. Attach test plan to Feature X.Y
+    3. Run Feature-level integration tests
+    4. Validate all Feature acceptance criteria
+    5. Test cross-story integration points
+    6. Run end-to-end Feature functionality tests
+    """,
+    status_id={{STATUS_NEW}},
+    priority_id={{PRIORITY_HIGH}}
+)
+mcp_openproject_set_work_package_parent(
+    work_package_id=integration_test_story["work_package"]["id"],
+    parent_id=feature["work_package"]["id"]
+)
 ```
 
 ### Creating a User Story
+
+**CRITICAL: Always check for existing Story before creating**
+
+**CRITICAL: INCREMENTAL DEVELOPMENT** - Story must be verifiable with previous work, NOT dependent on future work.
+
 ```python
-story = mcp_openproject_create_work_package(
-    project_id={{OPENPROJECT_PROJECT_ID}},
-    subject="Story N.M: Story Name",
-    type_id={{TYPE_USER_STORY}},
-    description="""
-    As a {persona},
-    I want {goal},
-    So that {benefit}.
-    
-    **Acceptance Criteria:**
-    Given... When... Then...
-    """,
-    priority_id={{PRIORITY_NORMAL}}
-)
-# Set parent to epic
-mcp_openproject_set_work_package_parent(
-    work_package_id=story["work_package"]["id"],
-    parent_id=epic_id
-)
+# Check for existing Story
+def check_existing_story(parent_id: int, story_subject: str) -> dict | None:
+    """Check if Story already exists under parent (Feature or Epic)."""
+    children = mcp_openproject_get_work_package_children(
+        parent_id=parent_id,
+        status="all"  # Include closed stories
+    )
+    for child in children.get("children", []):
+        if child["type"] == "User story":
+            if story_subject.lower() in child["subject"].lower() or child["subject"].lower() in story_subject.lower():
+                return child
+    return None
+
+story_subject = "Story N.M: Story Name"  # Or "Story N.F.M" if under Feature
+parent_id = feature_id  # Or epic_id if no Features
+existing_story = check_existing_story(parent_id=parent_id, story_subject=story_subject)
+
+if existing_story:
+    # Update existing Story
+    story = mcp_openproject_update_work_package(
+        work_package_id=existing_story["id"],
+        description="""
+        As a {updated_persona},
+        I want {updated_goal},
+        So that {updated_benefit}.
+        
+        **Acceptance Criteria:**
+        Given... When... Then...
+        """
+    )
+    story_id = existing_story["id"]
+else:
+    # Create new Story
+    story = mcp_openproject_create_work_package(
+        project_id={{OPENPROJECT_PROJECT_ID}},
+        subject=story_subject,
+        type_id={{TYPE_USER_STORY}},
+        description="""
+        As a {persona},
+        I want {goal},
+        So that {benefit}.
+        
+        **Acceptance Criteria:**
+        Given... When... Then...
+        """,
+        status_id={{STATUS_NEW}},
+        priority_id={{PRIORITY_NORMAL}}
+    )
+    story_id = story["work_package"]["id"]
+    # Set parent to Feature (if Features exist) or Epic (if no Features)
+    mcp_openproject_set_work_package_parent(
+        work_package_id=story_id,
+        parent_id=parent_id
+    )
 # Attach detailed acceptance criteria doc to this work package
+
+# MANDATORY: Create test task (Task X.Y.T) for Story
+# This must be created during story grooming
+test_task = mcp_openproject_create_work_package(
+    project_id={{OPENPROJECT_PROJECT_ID}},
+    subject="Task N.M.T: Story N.M Testing and Validation",  # MANDATORY test task
+    type_id={{TYPE_TASK}},
+    description="""
+    **MANDATORY Test Task for Story N.M**
+    
+    **CRITICAL:** This test task MUST be completed and closed before the Story can be closed.
+    
+    **Activities:**
+    1. Create Story test document: `story-N-M-test-plan.md`
+    2. Attach test document to Story N.M
+    3. Validate all acceptance criteria
+    4. Run integration tests
+    5. Verify implementation works as expected
+    6. Verify code follows architecture patterns
+    7. Verify error handling works correctly
+    8. Verify documentation is updated
+    """,
+    status_id={{STATUS_NEW}},
+    priority_id={{PRIORITY_HIGH}}  # High priority - required for story closure
+)
+mcp_openproject_set_work_package_parent(
+    work_package_id=test_task["work_package"]["id"],
+    parent_id=story["work_package"]["id"]
+)
 ```
 
 ### Creating a Task
 ```python
 task = mcp_openproject_create_work_package(
     project_id={{OPENPROJECT_PROJECT_ID}},
-    subject="Task N.M.P: Task Name",
+    subject="Task N.M.P: Task Name",  # Or "Task N.F.M.P" if Story is under Feature
     type_id={{TYPE_TASK}},
-    description="Implementation details"
+    description="Implementation details",
+    status_id={{STATUS_NEW}}
 )
 mcp_openproject_set_work_package_parent(
     work_package_id=task["work_package"]["id"],
     parent_id=story_id
 )
-# Attach implementation notes to this work package when complete
+# CRITICAL: Always use update_task_status_and_parent() when updating task status
+# This automatically updates parent Story status
+```
+
+### Creating a Bug
+```python
+bug = mcp_openproject_create_work_package(
+    project_id={{OPENPROJECT_PROJECT_ID}},
+    subject="Bug: Brief Description",
+    type_id={{TYPE_BUG}},
+    description="""
+    **Bug Report:**
+    
+    **Story:** {Story ID and Title}
+    **Task:** {Task ID and Title} (if applicable)
+    
+    **Expected Behavior:**
+    {What should happen}
+    
+    **Actual Behavior:**
+    {What actually happens}
+    
+    **Steps to Reproduce:**
+    1. {Step 1}
+    2. {Step 2}
+    3. {Step 3}
+    
+    **Acceptance Criteria Violated:**
+    - {AC 1}
+    - {AC 2}
+    """,
+    status_id={{STATUS_NEW}},
+    priority_id={{PRIORITY_NORMAL}}  # Adjust based on impact
+)
+mcp_openproject_set_work_package_parent(
+    work_package_id=bug["work_package"]["id"],
+    parent_id=story_id
+)
+# Assign bug to dev
+mcp_openproject_assign_work_package(
+    work_package_id=bug["work_package"]["id"],
+    assignee_id=dev_user_id
+)
+# CRITICAL: Always use update_bug_status_and_check_story() when closing bugs
+# This automatically checks if parent Story can be closed
 ```
 
 ---
@@ -248,32 +537,62 @@ mcp_openproject_set_work_package_parent(
 # Agent Responsibilities
 
 ## PM Agent
-- Creates Epics, Features, User Stories from PRD
-- Maintains acceptance criteria
+- **Grooming (Responsible):** Creates and grooms Epics, Features, User Stories from PRD
+- **Epic Grooming:** When Epic is "In specification", ensures all required artifacts are attached:
+  - Epic Design Document
+  - Story Breakdown Document
+  - Epic Test Plan (if applicable)
+- **Feature Grooming:** When Feature is "In specification", ensures all required artifacts are attached:
+  - Feature Architecture Document
+  - API Documentation (if Feature includes APIs)
+  - UI Mocks/Designs (if Feature includes UI)
+  - Feature Scope Document
+- **Story Grooming:** When Story is "In specification", ensures all required artifacts are attached:
+  - Acceptance Criteria Document (or in description)
+  - UI Mocks/Designs (if Story includes UI)
+  - Technical Specifications (if Story requires technical details)
+- Maintains Feature/Story acceptance criteria
 - Queries sprint backlog and status
-- **Documents:** Attaches product briefs to Project, PRDs to Epic
+- Updates Epic/Feature status: → "In progress" (when first story starts)
+- **Documents:** Attaches product briefs to Project, PRDs to Epic, Feature architecture to Feature
+- **Accountable for:** Grooming quality and artifact completeness
 
 ## Dev Agent
-- Queries assigned work packages
-- Updates task status during implementation
+- Queries assigned work packages (tasks, bugs)
+- Updates task status: New → In progress → Developed → In testing
+- Updates bug status: New → In progress → Developed → In testing
+- **CRITICAL:** Uses `update_task_status_and_parent()` function to automatically update parent Story status
 - Logs time against work packages
 - **Documents:** Attaches implementation notes to Task
 
-## SM Agent
+## SM Agent (Scrum Master)
+- **Protocol Enforcement (Accountable):** Verifies required artifacts before allowing work packages to transition from "In specification" to "Specified"
+- **Epic Specification Protocol:** Verifies Epic Design Document, Story Breakdown Document, Epic Test Plan (if applicable) are attached before allowing Epic → "Specified"
+- **Feature Specification Protocol:** Verifies Feature Architecture Document, API Documentation (if APIs), UI Mocks (if UI), Feature Scope Document are attached before allowing Feature → "Specified"
+- **Story Specification Protocol:** Verifies Acceptance Criteria, UI Mocks (if UI), Technical Specifications (if required) are attached before allowing Story → "Specified"
+- Uses `mcp_openproject_list_work_package_attachments()` and helper functions to check artifacts
+- Blocks status transitions if artifacts are missing
 - Sprint planning and assignment
 - Status reporting
 - Blocker management
 - **Documents:** Attaches sprint reports to Project
+- **Accountable for:** Protocol enforcement, artifact verification, blocking incomplete work packages
 
 ## Architect Agent
 - Creates technical tasks
 - Links stories to specifications
 - **Documents:** Attaches architecture docs to Feature, system design to Project
 
-## TEA Agent
-- Creates test tasks
-- Updates test status
-- **Documents:** Attaches test strategy to Feature, test cases to Story
+## TEA Agent (Test Team)
+- Creates test tasks, Bugs (when validation fails)
+- Updates task status: In testing → Tested → Closed
+- Updates bug status: In testing → Tested → Closed
+- Updates Feature status: In testing → Tested → Closed (after Feature integration tests)
+- **CRITICAL:** 
+  - Uses `update_task_status_and_parent()` when closing tasks
+  - Uses `update_bug_status_and_check_story()` when closing bugs
+  - Runs Feature-level integration tests and updates Feature status
+- **Documents:** Attaches test strategy to Feature, test cases to Story, Feature integration test plans to Feature
 
 ---
 
